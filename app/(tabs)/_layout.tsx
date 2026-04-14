@@ -1,41 +1,68 @@
-import { DarkTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
-import 'react-native-reanimated';
+import { Tabs } from 'expo-router';
+import React from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { HapticTab } from '@/components/haptic-tab';
 
-SplashScreen.preventAutoHideAsync();
-
-export default function RootLayout() {
-  
-  useEffect(() => {
-    SplashScreen.hideAsync();
-  }, []);
-
+export default function TabLayout() {
   return (
-    <ThemeProvider value={DarkTheme}>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          animation: 'fade',
-          contentStyle: { backgroundColor: '#000' },
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarButton: HapticTab,
+        tabBarStyle: {
+          backgroundColor: '#080808',
+          borderTopWidth: 1,
+          borderTopColor: '#1C1C1C',
+          height: 68,
+          paddingBottom: 12,
+          paddingTop: 8,
+        },
+        tabBarActiveTintColor: '#FEB204',
+        tabBarInactiveTintColor: '#444',
+        tabBarLabelStyle: {
+          fontSize: 9,
+          fontWeight: '700',
+          letterSpacing: 1.2,
+          textTransform: 'uppercase',
+        },
+      }}
+    >
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home-outline" size={size} color={color} />
+          ),
         }}
-      >
-        {/* L'ordre ici définit la priorité, "welcome" sera ton point d'entrée */}
-        <Stack.Screen name="welcome" options={{ headerShown: false, animation: 'none' }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="details/[id]"
-          options={{
-            headerShown: false,
-            animation: 'slide_from_right',
-            presentation: 'card',
-          }}
-        />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="light" />
-    </ThemeProvider>
+      />
+      <Tabs.Screen
+        name="explore"
+        options={{
+          title: 'Explore',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="compass-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          title: 'Alerts',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="notifications-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person-outline" size={size} color={color} />
+          ),
+        }}
+      />
+    </Tabs>
   );
 }
