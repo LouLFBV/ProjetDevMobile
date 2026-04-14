@@ -1,51 +1,39 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
-import { Ionicons } from '@expo/vector-icons';
+import { DarkTheme, ThemeProvider } from '@react-navigation/native';
+import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
+import 'react-native-reanimated';
 
-import { HapticTab } from '@/components/haptic-tab';
+SplashScreen.preventAutoHideAsync();
 
-export default function TabLayout() {
+export default function RootLayout() {
+  useEffect(() => {
+    SplashScreen.hideAsync();
+  }, []);
+
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarButton: HapticTab,
-        tabBarStyle: {
-          backgroundColor: '#0A0A0A',
-          borderTopWidth: 1,
-          borderTopColor: '#1C1C1C',
-          height: 65,
-          paddingBottom: 10,
-          paddingTop: 8,
-        },
-        tabBarActiveTintColor: '#FEB204',
-        tabBarInactiveTintColor: '#555',
-        tabBarLabelStyle: {
-          fontSize: 10,
-          fontWeight: '700',
-          letterSpacing: 1,
-          textTransform: 'uppercase',
-        },
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Species',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="fish-outline" size={size} color={color} />
-          ),
+    <ThemeProvider value={DarkTheme}>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          animation: 'fade',
+          contentStyle: { backgroundColor: '#000' },
         }}
-      />
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: 'Explore',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="compass-outline" size={size} color={color} />
-          ),
-        }}
-      />
-    </Tabs>
+      >
+        <Stack.Screen name="welcome" options={{ headerShown: false, animation: 'none' }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="details/[id]"
+          options={{
+            headerShown: false,
+            animation: 'slide_from_right',
+            presentation: 'card',
+          }}
+        />
+        <Stack.Screen name="+not-found" />
+      </Stack>
+      <StatusBar style="light" />
+    </ThemeProvider>
   );
 }

@@ -10,26 +10,22 @@ import {
   TouchableOpacity,
   RefreshControl,
   StatusBar,
+  Dimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { getFishes } from '@/src/services/fishApi';
+import { getFishes, Fish } from '@/src/services/fishApi';
 
-interface Fish {
-  id: number;
-  name: string;
-  scientific_name: string;
-  image: string;
-  family?: string;
-  habitat?: string;
-}
+const { width } = Dimensions.get('window');
+const CARD_GAP = 12;
+const CARD_MARGIN = 16;
+const CARD_WIDTH = (width - CARD_MARGIN * 2 - CARD_GAP) / 2;
 
-// Dynamic Unsplash fallback using the fish's name
-const getFishImageUrl = (fish: Fish): string => {
+// Resolve image with Unsplash fallback
+const resolveImage = (fish: Fish): string => {
   if (fish.image && fish.image.startsWith('http')) return fish.image;
-  const slug = encodeURIComponent(fish.name || 'fish');
-  return `https://source.unsplash.com/featured/800x600/?fish,${slug},underwater`;
+  return `https://source.unsplash.com/featured/400x500/?fish,${encodeURIComponent(fish.name || 'fish')},underwater`;
 };
 
 export default function HomeScreen() {
@@ -39,16 +35,14 @@ export default function HomeScreen() {
   const [search, setSearch] = useState('');
   const router = useRouter();
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useEffect(() => { loadData(); }, []);
 
-  const loadData = async () => {
+  const loadData = async (force = false) => {
     try {
-      const data = await getFishes();
+      const data = await getFishes(force);
       setFishes(data);
-    } catch (error) {
-      console.error('Erreur de chargement', error);
+    } catch (err) {
+      console.error('Load failed', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -57,46 +51,54 @@ export default function HomeScreen() {
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    loadData();
+    loadData(true);
   }, []);
 
-  const filteredFishes = fishes.filter(
-    f =>
-      f.name?.toLowerCase().includes(search.toLowerCase()) ||
-      f.scientific_name?.toLowerCase().includes(search.toLowerCase())
+  const filtered = fishes.filter(f =>
+    f.name?.toLowerCase().includes(search.toLowerCase()) ||
+    f.scientific_name?.toLowerCase().includes(search.toLowerCase()) ||
+    f.family?.toLowerCase().includes(search.toLowerCase())
   );
 
   const renderHeader = () => (
-    <>
-      {/* NatGeo Header */}
+    <View>
+      {/* NatGeo Header bar */}
       <View style={styles.header}>
-        <View style={styles.natGeoLogo} />
+        <View style={styles.natGeoMark} />
         <View>
-          <Text style={styles.headerTitle}>NATIONAL</Text>
-          <Text style={styles.headerTitle}>GEOGRAPHIC</Text>
+          <Text style={styles.headerBrand}>NATIONAL</Text>
+          <Text style={styles.headerBrand}>GEOGRAPHIC</Text>
         </View>
-        <Text style={styles.headerCount}>
-          {filteredFishes.length} <Text style={styles.headerCountSub}>SPECIES</Text>
-        </Text>
+        <View style={styles.headerRight}>
+          <Text style={styles.speciesCount}>{filtered.length}</Text>
+          <Text style={styles.speciesLabel}>SPECIES</Text>
+        </View>
       </View>
 
-      {/* Search */}
-      <View style={styles.searchContainer}>
-        <Ionicons name="search-outline" size={18} color="#555" style={styles.searchIcon} />
+      {/* Section heading */}
+      <View style={styles.sectionRow}>
+        <View style={styles.sectionAccent} />
+        <Text style={styles.sectionTitle}>FISH SPECIES ARCHIVE</Text>
+      </View>
+
+      {/* Search bar */}
+      <View style={styles.searchWrap}>
+        <Ionicons name="search-outline" size={16} color="#555" />
         <TextInput
-          style={styles.searchBar}
-          placeholder="Search species..."
-          placeholderTextColor="#555"
-          onChangeText={setSearch}
+          style={styles.searchInput}
+          placeholder="Search species, family…"
+          placeholderTextColor="#444"
           value={search}
+          onChangeText={setSearch}
+          returnKeyType="search"
         />
         {search.length > 0 && (
-          <TouchableOpacity onPress={() => setSearch('')}>
-            <Ionicons name="close-circle" size={18} color="#555" />
+          <TouchableOpacity onPress={() => setSearch('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Ionicons name="close-circle" size={16} color="#555" />
           </TouchableOpacity>
         )}
       </View>
-    </>
+    </View>
   );
 
   if (loading) {
@@ -106,7 +108,7 @@ export default function HomeScreen() {
         {renderHeader()}
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#FEB204" />
-          <Text style={styles.loadingText}>LOADING SPECIES...</Text>
+          <Text style={styles.loadingLabel}>LOADING SPECIES…</Text>
         </View>
       </SafeAreaView>
     );
@@ -116,10 +118,13 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" />
       <FlatList
-        data={filteredFishes}
+        data={filtered}
         keyExtractor={item => item.id.toString()}
+        numColumns={2}
+        columnWrapperStyle={styles.row}
         ListHeaderComponent={renderHeader}
         contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -130,15 +135,15 @@ export default function HomeScreen() {
           />
         }
         ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Ionicons name="fish-outline" size={48} color="#333" />
-            <Text style={styles.emptyText}>NO SPECIES FOUND</Text>
-            <Text style={styles.emptySubText}>Try a different search term</Text>
+          <View style={styles.empty}>
+            <Ionicons name="fish-outline" size={44} color="#222" />
+            <Text style={styles.emptyTitle}>NO SPECIES FOUND</Text>
+            <Text style={styles.emptySub}>Try a different search term</Text>
           </View>
         }
         renderItem={({ item, index }) => (
           <TouchableOpacity
-            activeOpacity={0.85}
+            activeOpacity={0.88}
             style={styles.card}
             onPress={() =>
               router.push({
@@ -147,39 +152,39 @@ export default function HomeScreen() {
               })
             }
           >
-            {/* Index badge */}
-            <View style={styles.indexBadge}>
-              <Text style={styles.indexText}>{String(index + 1).padStart(2, '0')}</Text>
+            {/* Image */}
+            <View style={styles.imageWrap}>
+              <Image
+                source={{ uri: resolveImage(item) }}
+                style={styles.image}
+                contentFit="cover"
+                transition={350}
+              />
+              {/* Index badge */}
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{String(index + 1).padStart(2, '0')}</Text>
+              </View>
             </View>
 
-            <Image
-              source={{ uri: getFishImageUrl(item) }}
-              style={styles.image}
-              contentFit="cover"
-              transition={400}
-            />
-
-            {/* Bottom gradient overlay */}
-            <View style={styles.imageOverlay} />
-
-            <View style={styles.content}>
-              <View style={styles.labelRow}>
-                <View style={styles.yellowLabel} />
-                <Text style={styles.scientific} numberOfLines={1}>
-                  {item.scientific_name}
-                </Text>
-              </View>
-              <Text style={styles.name} numberOfLines={2}>
+            {/* Card body */}
+            <View style={styles.cardBody}>
+              <Text style={styles.scientificName} numberOfLines={1}>
+                {item.scientific_name || item.family}
+              </Text>
+              <Text style={styles.commonName} numberOfLines={2}>
                 {item.name}
               </Text>
-              {item.family && (
-                <Text style={styles.family}>{item.family}</Text>
-              )}
-            </View>
 
-            {/* Arrow indicator */}
-            <View style={styles.arrowBadge}>
-              <Ionicons name="arrow-forward" size={14} color="#000" />
+              {/* Footer row */}
+              <View style={styles.cardFooter}>
+                <View style={styles.readBtn}>
+                  <Ionicons name="book-outline" size={11} color="#000" />
+                  <Text style={styles.readText}>READ</Text>
+                </View>
+                {item.family ? (
+                  <Text style={styles.familyTag} numberOfLines={1}>{item.family}</Text>
+                ) : null}
+              </View>
             </View>
           </TouchableOpacity>
         )}
@@ -191,173 +196,206 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#080808',
   },
   center: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    gap: 16,
+    justifyContent: 'center',
+    gap: 14,
   },
-  loadingText: {
-    color: '#444',
+  loadingLabel: {
+    color: '#333',
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 3,
   },
+
+  // Header
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 22,
+    paddingHorizontal: CARD_MARGIN,
     paddingTop: 18,
-    marginBottom: 14,
-    gap: 14,
+    marginBottom: 16,
+    gap: 12,
   },
-  natGeoLogo: {
-    width: 12,
-    height: 45,
+  natGeoMark: {
+    width: 10,
+    height: 40,
     backgroundColor: '#FEB204',
   },
-  headerTitle: {
+  headerBrand: {
     color: '#FFF',
-    fontSize: 17,
+    fontSize: 14,
     fontWeight: '900',
-    letterSpacing: 1.5,
-    lineHeight: 20,
-  },
-  headerCount: {
-    marginLeft: 'auto',
-    color: '#FEB204',
-    fontSize: 24,
-    fontWeight: '900',
-  },
-  headerCountSub: {
-    fontSize: 11,
     letterSpacing: 2,
-    color: '#555',
+    lineHeight: 17,
   },
-  searchContainer: {
+  headerRight: {
+    marginLeft: 'auto',
+    alignItems: 'flex-end',
+  },
+  speciesCount: {
+    color: '#FEB204',
+    fontSize: 26,
+    fontWeight: '900',
+    lineHeight: 28,
+  },
+  speciesLabel: {
+    color: '#444',
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 2,
+  },
+
+  sectionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 22,
-    marginBottom: 20,
+    gap: 8,
+    paddingHorizontal: CARD_MARGIN,
+    marginBottom: 14,
+  },
+  sectionAccent: {
+    width: 3,
+    height: 14,
+    backgroundColor: '#FEB204',
+    borderRadius: 1,
+  },
+  sectionTitle: {
+    color: '#555',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 2.5,
+  },
+
+  // Search
+  searchWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: CARD_MARGIN,
+    marginBottom: 18,
     backgroundColor: '#111',
-    borderRadius: 4,
+    borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#222',
+    borderColor: '#1E1E1E',
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 11,
     gap: 10,
   },
-  searchIcon: {
-    flexShrink: 0,
-  },
-  searchBar: {
+  searchInput: {
     flex: 1,
     color: '#FFF',
-    fontSize: 15,
+    fontSize: 14,
     padding: 0,
   },
+
+  // Grid
   listContent: {
+    paddingHorizontal: CARD_MARGIN,
     paddingBottom: 30,
   },
+  row: {
+    gap: CARD_GAP,
+    marginBottom: CARD_GAP,
+  },
+
+  // Card
   card: {
-    backgroundColor: '#0D0D0D',
-    marginBottom: 22,
-    marginHorizontal: 22,
-    borderRadius: 3,
+    width: CARD_WIDTH,
+    backgroundColor: '#0F0F0F',
+    borderRadius: 14,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#1A1A1A',
   },
-  indexBadge: {
-    position: 'absolute',
-    top: 14,
-    left: 14,
-    zIndex: 10,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 2,
-  },
-  indexText: {
-    color: '#FEB204',
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 1,
+  imageWrap: {
+    position: 'relative',
   },
   image: {
     width: '100%',
-    height: 230,
+    height: CARD_WIDTH * 1.15,
   },
-  imageOverlay: {
+  badge: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 120,
-    // React Native doesn't support gradient here, use a semi-transparent view
-    backgroundColor: 'rgba(0,0,0,0)',
+    top: 10,
+    left: 10,
+    backgroundColor: 'rgba(0,0,0,0.72)',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 3,
   },
-  content: {
-    padding: 16,
-  },
-  labelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
-    gap: 8,
-  },
-  yellowLabel: {
-    width: 4,
-    height: 12,
-    backgroundColor: '#FEB204',
-    borderRadius: 1,
-  },
-  name: {
-    color: '#FFF',
-    fontSize: 22,
-    fontWeight: '900',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    lineHeight: 26,
-  },
-  scientific: {
+  badgeText: {
     color: '#FEB204',
-    fontSize: 11,
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  cardBody: {
+    padding: 12,
+    gap: 4,
+  },
+  scientificName: {
+    color: '#FEB204',
+    fontSize: 9,
     fontWeight: '700',
     letterSpacing: 1.5,
     textTransform: 'uppercase',
-    flexShrink: 1,
   },
-  family: {
-    color: '#444',
-    fontSize: 12,
-    marginTop: 6,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  arrowBadge: {
-    position: 'absolute',
-    bottom: 16,
-    right: 16,
-    backgroundColor: '#FEB204',
-    padding: 6,
-    borderRadius: 2,
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingTop: 80,
-    gap: 12,
-  },
-  emptyText: {
-    color: '#333',
+  commonName: {
+    color: '#FFF',
     fontSize: 14,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    lineHeight: 18,
+    letterSpacing: 0.2,
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  readBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FEB204',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 3,
+  },
+  readText: {
+    color: '#000',
+    fontSize: 8,
+    fontWeight: '900',
+    letterSpacing: 1.5,
+  },
+  familyTag: {
+    color: '#333',
+    fontSize: 8,
+    fontWeight: '600',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    flexShrink: 1,
+    marginLeft: 6,
+    textAlign: 'right',
+  },
+
+  // Empty
+  empty: {
+    alignItems: 'center',
+    paddingTop: 70,
+    gap: 10,
+  },
+  emptyTitle: {
+    color: '#2A2A2A',
+    fontSize: 13,
     fontWeight: '900',
     letterSpacing: 3,
   },
-  emptySubText: {
-    color: '#2A2A2A',
-    fontSize: 13,
+  emptySub: {
+    color: '#1E1E1E',
+    fontSize: 12,
   },
 });
