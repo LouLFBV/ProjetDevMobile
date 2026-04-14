@@ -31,7 +31,6 @@ export default function RootLayout() {
             presentation: 'card',
           }}
         />
-        <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="light" />
     </ThemeProvider>

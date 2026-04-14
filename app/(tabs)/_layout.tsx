@@ -17,7 +17,7 @@ export default function TabLayout() {
           paddingBottom: 12,
           paddingTop: 8,
         },
-        tabBarActiveTintColor: '#FEB204',
+        tabBarActiveTintColor: '#FEB204', // Jaune NatGeo
         tabBarInactiveTintColor: '#444',
         tabBarLabelStyle: {
           fontSize: 9,
@@ -45,24 +45,7 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen
-        name="notifications"
-        options={{
-          title: 'Alerts',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="notifications-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Profile',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color} />
-          ),
-        }}
-      />
+      {/* Notifications et Profile ont été supprimés d'ici */}
     </Tabs>
   );
 }
