@@ -1,98 +1,197 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { 
+  StyleSheet, 
+  Text, 
+  View, 
+  FlatList, 
+  TextInput, 
+  SafeAreaView, 
+  ActivityIndicator, 
+  TouchableOpacity 
+} from 'react-native';
+import { Image } from 'expo-image'; 
+import { useRouter } from 'expo-router';
+import { getFishes } from '@/src/services/fishApi';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+interface Fish {
+  id: number;
+  name: string;
+  scientific_name: string;
+  image: string;
+}
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const [fishes, setFishes] = useState<Fish[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const router = useRouter();
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      const data = await getFishes();
+      setFishes(data);
+    } catch (error) {
+      console.error("Erreur de chargement", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredFishes = fishes.filter(f => 
+    f.name?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <View style={styles.natGeoLogo} />
+        <View>
+          <Text style={styles.headerTitle}>NATIONAL</Text>
+          <Text style={styles.headerTitle}>GEOGRAPHIC</Text>
+        </View>
+      </View>
+
+      <View style={styles.searchContainer}>
+        <TextInput 
+          style={styles.searchBar}
+          placeholder="Search species..."
+          placeholderTextColor="#666"
+          onChangeText={setSearch}
+          value={search}
+        />
+      </View>
+
+      {loading ? (
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color="#FEB204" />
+        </View>
+      ) : (
+        <FlatList
+          data={filteredFishes}
+          keyExtractor={(item) => item.id.toString()}
+          contentContainerStyle={styles.listContent}
+          renderItem={({ item }) => (
+            <TouchableOpacity 
+              activeOpacity={0.8}
+              style={styles.card}
+              onPress={() => router.push({
+                pathname: "/details/[id]",
+                params: {
+                  id: item.id,
+                  fishData: JSON.stringify(item)
+                }
+              })}
+            >
+              <Image
+              source={{ 
+              uri: item.image || 'https://images.unsplash.com/photo-1551244072-5d12893278ab?q=80&w=500' 
+              }}
+              style={styles.image}
+              contentFit="cover"
+              transition={400}
+              />
+              <View style={styles.content}>
+                <View style={styles.labelRow}>
+                  <View style={styles.yellowLabel} />
+                  <Text style={styles.scientific}>{item.scientific_name}</Text>
+                </View>
+                <Text style={styles.name}>{item.name}</Text>
+              </View>
+            </TouchableOpacity>
+          )}
+        />
+      )}
+    </SafeAreaView>
   );
 }
 
+// ON VERIFIE BIEN QUE TOUT EST LA :
 const styles = StyleSheet.create({
-  titleContainer: {
+  container: { 
+    flex: 1, 
+    backgroundColor: '#000' 
+  },
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  header: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    paddingHorizontal: 20, 
+    paddingTop: 20,
+    marginBottom: 10
+  },
+  natGeoLogo: { 
+    width: 12, 
+    height: 45, 
+    backgroundColor: '#FEB204', 
+    marginRight: 15 
+  },
+  headerTitle: { 
+    color: '#FFF', 
+    fontSize: 18, 
+    fontWeight: '900', 
+    letterSpacing: 1,
+    lineHeight: 20
+  },
+  searchContainer: {
+    paddingHorizontal: 20,
+    marginVertical: 15,
+  },
+  searchBar: { 
+    backgroundColor: '#1A1A1A', 
+    color: '#FFF', 
+    padding: 15, 
+    borderRadius: 8,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#333'
+  },
+  listContent: { // Ajouté pour corriger l'erreur
+    paddingBottom: 20
+  },
+  card: { // Ajouté pour corriger l'erreur
+    backgroundColor: '#111', 
+    marginBottom: 25, 
+    marginHorizontal: 20, 
+    borderRadius: 2, 
+    overflow: 'hidden',
+  },
+  image: { 
+    width: '100%', 
+    height: 220 
+  },
+  content: { 
+    padding: 15,
+  },
+  labelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    marginBottom: 5
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  yellowLabel: {
+    width: 4,
+    height: 12,
+    backgroundColor: '#FEB204',
+    marginRight: 8
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  name: { 
+    color: '#FFF', 
+    fontSize: 22, 
+    fontWeight: 'bold',
+    textTransform: 'uppercase'
   },
+  scientific: { 
+    color: '#FEB204', 
+    fontSize: 12, 
+    fontWeight: '600',
+    letterSpacing: 1,
+    textTransform: 'uppercase'
+  }
 });
