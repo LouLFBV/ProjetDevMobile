@@ -1,16 +1,16 @@
-import React, { useEffect, useRef, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Dimensions,
-  StatusBar,
-  Animated,
-} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  Animated,
+  Dimensions,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 const { width, height } = Dimensions.get('window');
 
@@ -18,8 +18,8 @@ const SLIDES = [
   {
     image: 'https://images.unsplash.com/photo-1518020382113-a7e8fc38eac9?q=80&w=1200',
     label: 'OCEAN',
-    title: 'DISCOVER\nNATURE',
-    sub: 'Dive into the extraordinary world of aquatic life, from shallow reefs to the abyssal deep.',
+    title: 'Discover nature\n and explore beyond',
+    sub: 'find with us your dream house uickly and precisely',
   },
   {
     image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200',
@@ -93,16 +93,16 @@ export default function WelcomeScreen() {
         style={[styles.logoArea, { opacity: fadeAnim, transform: [{ scale: logoScale }] }]}
       >
         <View style={styles.natGeoBlock} />
-        <View>
+        {/* <View>
           <Text style={styles.logoLine}>NATIONAL</Text>
           <Text style={styles.logoLine}>GEOGRAPHIC</Text>
-        </View>
+        </View> */}
       </Animated.View>
 
-      {/* Slide label tag */}
+      {/* Slide label tag
       <Animated.View style={[styles.labelTag, { opacity: fadeAnim }]}>
         <Text style={styles.labelTagText}>{slide.label}</Text>
-      </Animated.View>
+      </Animated.View> */}
 
       {/* Center content */}
       <Animated.View
@@ -128,12 +128,11 @@ export default function WelcomeScreen() {
         {/* CTA */}
         <TouchableOpacity
           style={styles.ctaButton}
-          activeOpacity={0.82}
           onPress={() => router.replace('/(tabs)')}
         >
-          <Text style={styles.ctaText}>GET STARTED</Text>
+          <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 18 }}>Get Started</Text>
           <View style={styles.ctaIconWrap}>
-            <Ionicons name="chevron-forward" size={18} color="#000" />
+            <Ionicons name="chevron-forward" size={24} color="white" />
           </View>
         </TouchableOpacity>
       </Animated.View>
@@ -176,7 +175,7 @@ const styles = StyleSheet.create({
   natGeoBlock: {
     width: 12,
     height: 44,
-    backgroundColor: '#FEB204',
+    backgroundColor: '#C1F45A',
   },
   logoLine: {
     color: '#FFF',
@@ -198,7 +197,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   labelTagText: {
-    color: '#FEB204',
+    color: '#C1F45A',
     fontSize: 9,
     fontWeight: '800',
     letterSpacing: 2.5,
@@ -214,7 +213,7 @@ const styles = StyleSheet.create({
   accentLine: {
     width: 44,
     height: 4,
-    backgroundColor: '#FEB204',
+    backgroundColor: '#C1F45A',
     marginBottom: 22,
     borderRadius: 2,
   },
@@ -232,7 +231,41 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     maxWidth: 310,
   },
-
+// --- DANS TON STYLESHEET ---
+ctaButton: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: 'rgba(255, 255, 255, 0.15)', // Fond semi-transparent sombre
+  paddingVertical: 8,       // Réduit pour laisser de la place au cercle
+  paddingLeft: 25,          // Plus d'espace à gauche pour le texte
+  paddingRight: 8,          // Peu d'espace à droite du cercle vert
+  borderRadius: 20,         // Bien arrondi (pill shape)
+  borderWidth: 1,
+  borderColor: 'rgba(255, 255, 255, 0.1)',
+  backdropFilter: 'blur(10px)', // Optionnel selon ta version d'Expo
+},
+ctaIconWrap: {
+  backgroundColor: '#C1F45A', // Le vert pomme
+  borderRadius: 15,          // Cercle parfait
+  width: 45,                 // Taille fixe pour le rond
+  height: 45,
+  justifyContent: 'center',
+  alignItems: 'center',
+  marginLeft: 15,
+},
+// --- AJUSTE AUSSI LES DOTS ---
+dotActive: {
+  width: 12,                 // Plus petit rond
+  height: 12,
+  backgroundColor: '#C1F45A',
+  borderRadius: 6,
+},
+dot: {
+  width: 8,
+  height: 8,
+  borderRadius: 4,
+  backgroundColor: 'rgba(255,255,255,0.3)',
+},
   // Bottom CTA area
   bottomArea: {
     position: 'absolute',
@@ -248,37 +281,10 @@ const styles = StyleSheet.create({
     gap: 7,
     alignItems: 'center',
   },
-  dot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.3)',
-  },
-  dotActive: {
-    width: 22,
-    height: 7,
-    backgroundColor: '#FEB204',
-    borderRadius: 4,
-  },
-  ctaButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FEB204',
-    paddingVertical: 14,
-    paddingLeft: 22,
-    paddingRight: 6,
-    borderRadius: 4,
-    gap: 10,
-  },
   ctaText: {
     color: '#000',
     fontSize: 13,
     fontWeight: '900',
     letterSpacing: 2,
-  },
-  ctaIconWrap: {
-    backgroundColor: 'rgba(0,0,0,0.18)',
-    borderRadius: 2,
-    padding: 5,
   },
 });
