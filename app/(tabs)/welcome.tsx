@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -16,22 +17,28 @@ const { width, height } = Dimensions.get('window');
 
 const SLIDES = [
   {
-    image: 'https://images.unsplash.com/photo-1518020382113-a7e8fc38eac9?q=80&w=1200',
-    label: 'OCEAN',
-    title: 'Discover nature\n and explore beyond',
-    sub: 'find with us your dream house uickly and precisely',
+    image: 'https://images.pexels.com/photos/30162615/pexels-photo-30162615.jpeg',
+    label: 'DEEP BLUE',
+    title: 'Discover nature\nand explore beyond',
+    sub: 'Experience the silent beauty of the ocean depths.',
   },
   {
-    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200',
-    label: 'WILDLIFE',
-    title: 'EXPLORE\nBEYOND',
-    sub: 'Over 800 documented fish species await your curiosity in our living scientific archive.',
+    image: 'https://images.pexels.com/photos/14438493/pexels-photo-14438493.jpeg',
+    label: 'TROPICAL',
+    title: 'EXPLORE\nTHE UNKNOWN',
+    sub: 'Over 800 documented fish species await your curiosity.',
   },
   {
-    image: 'https://images.unsplash.com/photo-1559825481-12a05cc00344?q=80&w=1200',
-    label: 'SCIENCE',
+    image: 'https://images.pexels.com/photos/14863434/pexels-photo-14863434.jpeg',
+    label: 'ECOSYSTEM',
     title: 'PROTECT\n& LEARN',
-    sub: 'Knowledge is the first step to conservation. Every species tells a story worth knowing.',
+    sub: 'Every species tells a story worth knowing and protecting.',
+  },
+  {
+  image: 'https://images.unsplash.com/photo-1610741620547-1191d693e43d?q=80&w=1200&auto=format',
+  label: 'BIODIVERSITY',
+  title: 'DISCOVER\n& PRESERVE',
+  sub: 'Each living being holds secrets that connect us to the heart of nature. Let’s unveil and safeguard them together.',
   },
 ];
 
@@ -45,6 +52,12 @@ export default function WelcomeScreen() {
   const btnOpacity = useRef(new Animated.Value(0)).current;
   const imgFade = useRef(new Animated.Value(1)).current;
 
+  useEffect(() => {
+  // On demande à expo-image de mettre toutes les images en cache immédiatement
+  SLIDES.forEach(slide => {
+    Image.prefetch(slide.image);
+  });
+}, []);
   useEffect(() => {
     Animated.sequence([
       Animated.delay(150),
@@ -60,13 +73,32 @@ export default function WelcomeScreen() {
   // Auto-advance with crossfade
   useEffect(() => {
     const timer = setInterval(() => {
-      Animated.timing(imgFade, { toValue: 0.4, duration: 400, useNativeDriver: true }).start(() => {
+      // 1. On cache l'image actuelle (Opacité -> 0)
+      Animated.timing(imgFade, { 
+        toValue: 0, 
+        duration: 400, 
+        useNativeDriver: true 
+      }).start(() => {
+        
+        // 2. On change l'URL de l'image
         setCurrentSlide(prev => (prev + 1) % SLIDES.length);
-        Animated.timing(imgFade, { toValue: 1, duration: 600, useNativeDriver: true }).start();
+
+        // 3. ON ATTEND UN TOUT PETIT PEU (100ms) 
+        // Cela laisse le temps au moteur de rendu de charger la nouvelle source
+        setTimeout(() => {
+          // 4. On réaffiche la nouvelle image (Opacité -> 1)
+          Animated.timing(imgFade, { 
+            toValue: 1, 
+            duration: 600, 
+            useNativeDriver: true 
+          }).start();
+        }, 250); // Ce délai fait toute la différence pour la synchro
+        
       });
     }, 4500);
+
     return () => clearInterval(timer);
-  }, []);
+  }, [imgFade]); // Ajout de imgFade en dépendance pour la clarté
 
   const slide = SLIDES[currentSlide];
 
@@ -80,29 +112,18 @@ export default function WelcomeScreen() {
           source={{ uri: slide.image }}
           style={styles.bgImage}
           contentFit="cover"
-          transition={600}
+          // RETIRE transition={600} ici pour éviter le conflit
         />
       </Animated.View>
 
-      {/* Gradient overlays */}
-      <View style={styles.overlayTop} />
-      <View style={styles.overlayBottom} />
-
-      {/* NatGeo Logo */}
-      <Animated.View
-        style={[styles.logoArea, { opacity: fadeAnim, transform: [{ scale: logoScale }] }]}
-      >
-        <View style={styles.natGeoBlock} />
-        {/* <View>
-          <Text style={styles.logoLine}>NATIONAL</Text>
-          <Text style={styles.logoLine}>GEOGRAPHIC</Text>
-        </View> */}
-      </Animated.View>
-
-      {/* Slide label tag
-      <Animated.View style={[styles.labelTag, { opacity: fadeAnim }]}>
-        <Text style={styles.labelTagText}>{slide.label}</Text>
-      </Animated.View> */}
+      {/* Dégradé noir partant du bas */}
+      <LinearGradient
+        // 'transparent' en haut, noir intense en bas
+        colors={['transparent', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.9)', '#000']}
+        // On définit où chaque couleur commence (0 = haut, 1 = bas)
+        locations={[0, 0.4, 0.7, 1]}
+        style={styles.overlayBottom}
+      />
 
       {/* Center content */}
       <Animated.View
@@ -111,7 +132,7 @@ export default function WelcomeScreen() {
           { opacity: fadeAnim, transform: [{ translateY: slideUpAnim }] },
         ]}
       >
-        <View style={styles.accentLine} />
+        {/* <View style={styles.accentLine} /> */}
         <Text style={styles.tagline}>{slide.title}</Text>
         <Text style={styles.subtitle}>{slide.sub}</Text>
       </Animated.View>
@@ -120,21 +141,32 @@ export default function WelcomeScreen() {
       <Animated.View style={[styles.bottomArea, { opacity: btnOpacity }]}>
         {/* Pagination dots */}
         <View style={styles.dotsRow}>
-          {SLIDES.map((_, i) => (
-            <View key={i} style={[styles.dot, i === currentSlide && styles.dotActive]} />
-          ))}
-        </View>
-
-        {/* CTA */}
-        <TouchableOpacity
-          style={styles.ctaButton}
-          onPress={() => router.replace('/(tabs)')}
-        >
-          <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 18 }}>Get Started</Text>
-          <View style={styles.ctaIconWrap}>
-            <Ionicons name="chevron-forward" size={24} color="white" />
+        {SLIDES.map((_, i) => (
+          <View key={i} style={[styles.dot, i === currentSlide && styles.dotActive]}>
+            {i === currentSlide && (
+              <Ionicons name="chevron-forward" size={12} color="#000" style={{ marginLeft: 2 }} />
+            )}
           </View>
-        </TouchableOpacity>
+        ))}
+      </View>
+        {/* CTA */}
+<TouchableOpacity
+  style={styles.ctaButtonContainer} 
+  onPress={() => router.replace('/(tabs)')}
+>
+  <LinearGradient
+    colors={['transparent', 'rgba(255, 255, 255, 0.15)']}
+    start={{ x: 1, y: 0.5 }}
+    end={{ x: 0.35, y: 0.5 }}
+    style={styles.ctaGradientBg}
+  />
+  
+  <Text style={styles.ctaTextLabel}>Get Started</Text>
+  
+  <View style={styles.ctaIconWrap}>          
+    <Ionicons name="chevron-forward" size={30} color="white" />
+  </View>
+</TouchableOpacity>
       </Animated.View>
     </View>
   );
@@ -155,58 +187,18 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.45)',
   },
   overlayBottom: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: height * 0.6,
-    backgroundColor: 'rgba(0,0,0,0.72)',
-  },
+  position: 'absolute',
+  bottom: 0,
+  left: 0,
+  right: 0,
+  height: height * 0.75, // Couvre 75% de l'écran en partant du bas
+},
 
-  // Logo
-  logoArea: {
-    position: 'absolute',
-    top: 58,
-    left: 26,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  natGeoBlock: {
-    width: 12,
-    height: 44,
-    backgroundColor: '#C1F45A',
-  },
-  logoLine: {
-    color: '#FFF',
-    fontSize: 15,
-    fontWeight: '900',
-    letterSpacing: 2.5,
-    lineHeight: 18,
-  },
-
-  // Label tag (top-right)
-  labelTag: {
-    position: 'absolute',
-    top: 66,
-    right: 26,
-    borderWidth: 1,
-    borderColor: 'rgba(254,178,4,0.5)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 2,
-  },
-  labelTagText: {
-    color: '#C1F45A',
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 2.5,
-  },
-
+ 
   // Main text block
   centerContent: {
     position: 'absolute',
-    bottom: 160,
+    bottom: 200,
     left: 26,
     right: 26,
   },
@@ -219,9 +211,9 @@ const styles = StyleSheet.create({
   },
   tagline: {
     color: '#FFF',
-    fontSize: 56,
-    fontWeight: '900',
-    lineHeight: 60,
+    fontSize: 32,
+    fontWeight: '700',
+    lineHeight: 45,
     letterSpacing: 0.5,
     marginBottom: 16,
   },
@@ -231,40 +223,32 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     maxWidth: 310,
   },
-// --- DANS TON STYLESHEET ---
 ctaButton: {
   flexDirection: 'row',
   alignItems: 'center',
   backgroundColor: 'rgba(255, 255, 255, 0.15)', // Fond semi-transparent sombre
   paddingVertical: 8,       // Réduit pour laisser de la place au cercle
-  paddingLeft: 25,          // Plus d'espace à gauche pour le texte
+  paddingLeft: 10,          // Plus d'espace à gauche pour le texte
   paddingRight: 8,          // Peu d'espace à droite du cercle vert
   borderRadius: 20,         // Bien arrondi (pill shape)
   borderWidth: 1,
   borderColor: 'rgba(255, 255, 255, 0.1)',
   backdropFilter: 'blur(10px)', // Optionnel selon ta version d'Expo
 },
-ctaIconWrap: {
-  backgroundColor: '#C1F45A', // Le vert pomme
-  borderRadius: 15,          // Cercle parfait
-  width: 45,                 // Taille fixe pour le rond
-  height: 45,
-  justifyContent: 'center',
-  alignItems: 'center',
-  marginLeft: 15,
-},
-// --- AJUSTE AUSSI LES DOTS ---
-dotActive: {
-  width: 12,                 // Plus petit rond
-  height: 12,
-  backgroundColor: '#C1F45A',
-  borderRadius: 6,
-},
+
 dot: {
-  width: 8,
-  height: 8,
+  width: 7,
+  height: 7,
   borderRadius: 4,
   backgroundColor: 'rgba(255,255,255,0.3)',
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+dotActive: {
+  width: 15,        
+  height: 15,       
+  backgroundColor: '#C1F45A',
+  borderRadius: 8,  // Moitié de la taille pour rester un cercle
 },
   // Bottom CTA area
   bottomArea: {
@@ -287,4 +271,34 @@ dot: {
     fontWeight: '900',
     letterSpacing: 2,
   },
+
+ctaButtonContainer: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  borderRadius: 10, 
+  overflow: 'hidden', // Crucial pour que le dégradé ne dépasse pas des arrondis
+  borderWidth: 1,
+  borderColor: 'rgba(255, 255, 255, 0.05)',
+},
+ctaGradientBg: {
+  ...StyleSheet.absoluteFillObject, 
+},
+ctaTextLabel: {
+  color: '#FFF',
+  fontWeight: 'bold',
+  fontSize: 18,
+  marginLeft: 10, 
+  marginRight: 25,
+  zIndex: 1, 
+},
+ctaIconWrap: {
+  backgroundColor: '#C1F45A',
+  borderRadius: 13,
+  width: 48,
+  height: 48,
+  justifyContent: 'center',
+  alignItems: 'center',
+  margin: 5, // Petit espace entre le bord du bouton et le cercle vert
+  zIndex: 1,
+},
 });
