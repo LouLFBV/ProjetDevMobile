@@ -1,7 +1,7 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
-import { Ionicons } from '@expo/vector-icons';
-import { HapticTab } from '@/components/haptic-tab';
+import { HapticTab } from "@/components/haptic-tab";
+import { Ionicons } from "@expo/vector-icons";
+import { Tabs } from "expo-router";
+import React from "react";
 
 export default function TabLayout() {
   return (
@@ -10,56 +10,40 @@ export default function TabLayout() {
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarStyle: {
-          backgroundColor: '#080808',
+          backgroundColor: "#080808",
           borderTopWidth: 1,
-          borderTopColor: '#1C1C1C',
+          borderTopColor: "#1C1C1C",
           height: 68,
           paddingBottom: 12,
           paddingTop: 8,
         },
-        tabBarActiveTintColor: '#FEB204',
-        tabBarInactiveTintColor: '#444',
+        tabBarActiveTintColor: "#C1F45A",
+        tabBarInactiveTintColor: "#444",
         tabBarLabelStyle: {
           fontSize: 9,
-          fontWeight: '700',
+          fontWeight: "700",
           letterSpacing: 1.2,
-          textTransform: 'uppercase',
+          textTransform: "uppercase",
         },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: "Home",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home-outline" size={size} color={color} />
+            // filled house — matches the image
+            <Ionicons name="home" size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
         name="explore"
         options={{
-          title: 'Explore',
+          title: "Explore",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="compass-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="notifications"
-        options={{
-          title: 'Alerts',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="notifications-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Profile',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color} />
+            // filled compass circle — matches the image
+            <Ionicons name="compass" size={size} color={color} />
           ),
         }}
       />
