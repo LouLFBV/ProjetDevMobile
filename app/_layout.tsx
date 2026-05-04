@@ -1,74 +1,57 @@
-// app/_layout.tsx
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DarkTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 
+// On empêche le splash de partir automatiquement
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const [isFirstLaunch, setIsFirstLaunch] = useState<boolean | null>(null);
+  const [isReady, setIsReady] = useState(false);
+  const [initialRoute, setInitialRoute] = useState<string | null>(null);
   const router = useRouter();
-  const segments = useSegments(); // Permet de savoir sur quel écran on est
 
   useEffect(() => {
-  const resetAndCheck = async () => {
-    // AJOUTE CETTE LIGNE :
-    await AsyncStorage.clear(); 
-    
-    // Ensuite ton code habituel
-    checkFirstLaunch();
-  };
-
-  resetAndCheck();
-}, []);
-
-useEffect(() => {
-  if (isFirstLaunch === null) return;
-
-  if (isFirstLaunch === true) {
-    router.replace('/welcome');
-  } else {
-    router.replace('/(tabs)');
-  }
-}, [isFirstLaunch]);
-
-  async function checkFirstLaunch() {
-    try {
-      const hasSeenOnboarding = await AsyncStorage.getItem('hasSeenOnboarding');
-      if (hasSeenOnboarding === null) {
-        setIsFirstLaunch(true);
-      } else {
-        setIsFirstLaunch(false);
+    async function prepare() {
+      try {
+        // 1. On vérifie le stockage local
+        const hasSeenOnboarding = await AsyncStorage.getItem('hasSeenOnboarding');
+        
+        // 2. On décide du chemin AVANT d'afficher quoi que ce soit
+        if (hasSeenOnboarding === null) {
+          setInitialRoute('welcome');
+        } else {
+          setInitialRoute('(tabs)');
+        }
+      } catch (e) {
+        setInitialRoute('(tabs)');
+      } finally {
+        // 3. On signale que l'app est prête
+        setIsReady(true);
       }
-    } catch (error) {
-      setIsFirstLaunch(false);
-    } finally {
+    }
+
+    prepare();
+  }, []);
+
+  useEffect(() => {
+    // 4. Une fois prêt, on cache le Splash et on saute sur la bonne route
+    if (isReady && initialRoute) {
+      // On utilise replace pour ne pas avoir de transition "back"
+      router.replace(initialRoute as any);
       SplashScreen.hideAsync();
     }
-  }
+  }, [isReady, initialRoute]);
 
-  // LOGIQUE DE REDIRECTION
-  useEffect(() => {
-    if (isFirstLaunch === null) return; // On attend que le check soit fini
-
-    const inTabsGroup = segments[0] === '(tabs)';
-
-    if (isFirstLaunch && !inTabsGroup) {
-      // Si c'est la 1ère fois, on s'assure d'être sur welcome
-      router.replace('/welcome');
-    } else if (!isFirstLaunch && !inTabsGroup) {
-      // Si ce n'est pas la 1ère fois, on va direct aux tabs
-      router.replace('/(tabs)');
-    }
-  }, [isFirstLaunch, segments]);
+  // Tant qu'on n'est pas prêt, on ne rend RIEN (on reste sur l'image du Splash)
+  if (!isReady) return null;
 
   return (
     <ThemeProvider value={DarkTheme}>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="welcome" />
-        <Stack.Screen name="(tabs)" />
+      <Stack screenOptions={{ headerShown: false, animation: 'none' }}>
+        <Stack.Screen name="welcome" options={{ animation: 'none' }} />
+        <Stack.Screen name="(tabs)" options={{ animation: 'none' }} />
       </Stack>
     </ThemeProvider>
   );

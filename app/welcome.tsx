@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Dimensions,
@@ -27,8 +27,19 @@ export default function WelcomeScreen() {
   const router = useRouter();
   const [activeIndex, setActiveIndex] = useState(0);
 
-  // 1. VALEUR ANIMÉE : Elle va suivre la position du scroll (0 à width * 3)
   const scrollX = useRef(new Animated.Value(0)).current;
+  
+  // TECHNIQUE DU RIDEAU : Le calque noir commence à opacité 1
+  const overlayOpacity = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    // On lance l'animation après un micro-délai pour laisser le thread JS respirer
+    Animated.timing(overlayOpacity, {
+      toValue: 0,
+      duration: 800, 
+      useNativeDriver: true, // Crucial pour la fluidité
+    }).start();
+  }, []);
 
   const onScroll = (event: any) => {
     const xPosition = event.nativeEvent.contentOffset.x;
@@ -37,30 +48,29 @@ export default function WelcomeScreen() {
       setActiveIndex(newIndex);
     }
   };
+
   const handleStart = async () => {
-  // On enregistre que l'onboarding est fait
-  await AsyncStorage.setItem('hasSeenOnboarding', 'true');
-  // On redirige vers les tabs
-  router.replace('/(tabs)');
-};
+    try {
+      await AsyncStorage.setItem('hasSeenOnboarding', 'true');
+      router.replace('/(tabs)');
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const renderItem = ({ item, index }: { item: typeof SLIDES[0], index: number }) => {
-    // 2. INTERPOLATION : On définit ce qui se passe quand on arrive, reste ou quitte le slide
     const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
 
-    // L'image devient sombre (fondu au noir) quand elle s'éloigne du centre
     const imageOpacity = scrollX.interpolate({
       inputRange,
-      outputRange: [0.4, 1, 0.4], // 0.4 au lieu de 0 pour ne pas être totalement noir trop vite
+      outputRange: [0.4, 1, 0.4],
     });
 
-    // Le texte monte et descend pendant le swipe (effet parallaxe)
     const translateY = scrollX.interpolate({
       inputRange,
       outputRange: [60, 0, -60],
     });
 
-    // Le texte disparaît en fondu
     const textOpacity = scrollX.interpolate({
       inputRange,
       outputRange: [0, 1, 0],
@@ -68,9 +78,13 @@ export default function WelcomeScreen() {
 
     return (
       <View style={styles.slideContainer}>
-        {/* On remplace Image par Animated.View contenant l'image pour l'opacité */}
         <Animated.View style={[StyleSheet.absoluteFillObject, { opacity: imageOpacity }]}>
-          <Image source={{ uri: item.image }} style={styles.bgImage} contentFit="cover" />
+          <Image 
+            source={{ uri: item.image }} 
+            style={styles.bgImage} 
+            contentFit="cover"
+            transition={300} // Fondu interne à l'image pour plus de douceur
+          />
         </Animated.View>
         
         <LinearGradient
@@ -79,7 +93,6 @@ export default function WelcomeScreen() {
           style={styles.overlayBottom}
         />
 
-        {/* 3. ANIMATED.VIEW : Pour animer le texte */}
         <Animated.View style={[
           styles.centerContent, 
           { opacity: textOpacity, transform: [{ translateY }] }
@@ -95,14 +108,12 @@ export default function WelcomeScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
-      {/* 4. ANIMATED.FLATLIST : On branche le scroll sur notre scrollX */}
       <Animated.FlatList
         data={SLIDES}
         renderItem={renderItem}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        // Utilisation du driver natif pour une fluidité à 60 FPS
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { x: scrollX } } }],
           { useNativeDriver: true, listener: onScroll }
@@ -122,7 +133,7 @@ export default function WelcomeScreen() {
           ))}
         </View>
 
-        <TouchableOpacity style={styles.ctaButtonContainer} onPress={() => router.replace('/(tabs)')}>
+        <TouchableOpacity style={styles.ctaButtonContainer} onPress={handleStart}>
           <LinearGradient
             colors={['transparent', 'rgba(255, 255, 255, 0.15)']}
             start={{ x: 1, y: 0.5 }} end={{ x: 0.35, y: 0.5 }}
@@ -130,10 +141,19 @@ export default function WelcomeScreen() {
           />
           <Text style={styles.ctaTextLabel}>Get Started</Text>
           <View style={styles.ctaIconWrap}>
-            <Ionicons name="chevron-forward" size={30} color="white" />
+            <Ionicons name="chevron-forward" size={30} color="#000" />
           </View>
         </TouchableOpacity>
       </View>
+
+      {/* LE RIDEAU NOIR : Il couvre tout et s'efface pour révéler l'interface */}
+      <Animated.View 
+        pointerEvents="none" // Permet de cliquer à travers une fois invisible
+        style={[
+          StyleSheet.absoluteFillObject, 
+          { backgroundColor: '#000', opacity: overlayOpacity }
+        ]} 
+      />
     </View>
   );
 }
