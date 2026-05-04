@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -36,6 +37,12 @@ export default function WelcomeScreen() {
       setActiveIndex(newIndex);
     }
   };
+  const handleStart = async () => {
+  // On enregistre que l'onboarding est fait
+  await AsyncStorage.setItem('hasSeenOnboarding', 'true');
+  // On redirige vers les tabs
+  router.replace('/(tabs)');
+};
 
   const renderItem = ({ item, index }: { item: typeof SLIDES[0], index: number }) => {
     // 2. INTERPOLATION : On définit ce qui se passe quand on arrive, reste ou quitte le slide
