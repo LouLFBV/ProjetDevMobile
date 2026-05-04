@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "devMobile",
-    "slug": "devMobile",
+    "slug": "mon-projet",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -38,11 +38,25 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "c29e1814-c003-40ba-bab4-86c8755b8d6f"
+      }
+    },
+    "owner": "pecheprojetdevmobile",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/c29e1814-c003-40ba-bab4-86c8755b8d6f"
     }
   }
 }

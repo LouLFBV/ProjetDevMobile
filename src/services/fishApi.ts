@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const API_KEY = 'e325dba369msh6f2258c940ad510p135e21jsnc8e2736c1c0a';
-const STORAGE_KEY = '@fish_data_cache_v2';
+const STORAGE_KEY = '@fish_data_cache_v8';
 const CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
 
 interface CacheEntry {
@@ -25,7 +25,7 @@ const isCacheValid = (entry: CacheEntry): boolean => {
   return Date.now() - entry.timestamp < CACHE_TTL_MS;
 };
 
-export const getFishes = async (forceRefresh = false): Promise<Fish[]> => {
+export const getFishes = async (forceRefresh = true): Promise<Fish[]> => {
   try {
     // Check cache first
     if (!forceRefresh) {
@@ -73,18 +73,44 @@ export const getFishes = async (forceRefresh = false): Promise<Fish[]> => {
       rawData = (firstArray as any[]) || [];
     }
 
-    // Normalize data
-    const normalized: Fish[] = rawData.map((item: any, i: number) => ({
-      id: item.id ?? item.fish_id ?? i,
-      name: item.name ?? item.common_name ?? item.fish_name ?? 'Unknown Species',
-      scientific_name: item.scientific_name ?? item.latin_name ?? '',
-      image: item.image ?? item.img ?? item.picture ?? '',
-      family: item.family ?? item.fish_family ?? '',
-      habitat: item.habitat ?? '',
-      description: item.description ?? item.bio ?? '',
-      order: item.order ?? '',
-      class: item.class ?? 'Actinopterygii',
-    }));
+    const normalized: Fish[] = rawData.map((item: any, i: number) => {
+      let imageUrl = '';
+      
+      if (item.img_src_set) {
+        imageUrl = item.img_src_set['2x'] || item.img_src_set['1.5x'] || item.img_src_set['1.0x'] || Object.values(item.img_src_set)[0];
+      } else {
+        imageUrl = item.image || item.img || '';
+      }
+
+      // Conversion Thumb -> Original (Plus stable pour Wikipedia)
+      if (imageUrl.includes('wikimedia.org/wikipedia/commons/thumb/')) {
+        imageUrl = imageUrl.replace('/thumb/', '/').split('/').slice(0, -1).join('/');
+      }
+
+      if (typeof imageUrl === 'string') {
+        if (imageUrl.startsWith('//')) imageUrl = `https:${imageUrl}`;
+        
+        try {
+          // Double décodage pour nettoyer les erreurs d'encodage de l'API (ex: %252C)
+          let decodedUrl = decodeURI(decodeURI(imageUrl));
+          imageUrl = encodeURI(decodedUrl);
+        } catch (e) {
+          imageUrl = imageUrl.replace(/\s/g, '%20');
+        }
+      }
+
+      return {
+        id: item.id ?? item.fish_id ?? i,
+        name: item.name ?? 'Unknown Species',
+        scientific_name: item.scientific_name ?? '',
+        image: imageUrl, 
+        family: item.family ?? item.scientific_classification?.family ?? '',
+        habitat: item.habitat ?? '',
+        description: item.description ?? '',
+        order: item.order ?? item.scientific_classification?.order ?? '',
+        class: item.class ?? item.scientific_classification?.class ?? 'Actinopterygii',
+      };
+    });
 
     // Persist to cache
     const entry: CacheEntry = { timestamp: Date.now(), data: normalized };

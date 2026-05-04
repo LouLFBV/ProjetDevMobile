@@ -29,7 +29,7 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen
-        name="index"
+        name="index" // Correspond à app/(tabs)/index.tsx
         options={{
           title: 'Species',
           tabBarIcon: ({ color, size }) => (
@@ -38,7 +38,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="explore" // Correspond à app/(tabs)/explore.tsx
         options={{
           title: 'Explore',
           tabBarIcon: ({ color, size }) => (

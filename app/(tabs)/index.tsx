@@ -1,92 +1,121 @@
-<<<<<<< HEAD
-import React, { useEffect, useState } from 'react';
-import { 
-  StyleSheet, 
-  Text, 
-  View, 
-  FlatList, 
-  TextInput, 
-  SafeAreaView, 
-  ActivityIndicator, 
-  TouchableOpacity 
-} from 'react-native';
-import { Image } from 'expo-image'; 
-import { useRouter } from 'expo-router';
-=======
-import React, { useEffect, useState, useCallback } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  FlatList,
-  TextInput,
-  SafeAreaView,
-  ActivityIndicator,
-  TouchableOpacity,
-  RefreshControl,
-  StatusBar,
-} from 'react-native';
+import { getFishes } from '@/src/services/fishApi';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
->>>>>>> origin/mael
-import { getFishes } from '@/src/services/fishApi';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  SafeAreaView,
+  StatusBar, StyleSheet, Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
+
+// --- SYSTÈME DE FILE D'ATTENTE GLOBAL ---
+let imageQueue: (() => void)[] = [];
+let isProcessing = false;
+
+const processQueue = () => {
+  if (isProcessing || imageQueue.length === 0) return;
+  
+  isProcessing = true;
+  const nextLoad = imageQueue.shift();
+  
+  if (nextLoad) {
+    // On déclenche le chargement
+    nextLoad();
+  }
+};
+
+// Composant Image qui attend son tour
+const SafeImage = (props: any) => {
+  const [visible, setVisible] = useState(false);
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    const addToQueue = () => {
+      if (isMounted.current) setVisible(true);
+    };
+
+    imageQueue.push(addToQueue);
+    processQueue();
+
+    return () => { isMounted.current = false; };
+  }, []);
+
+  const handleNext = () => {
+    isProcessing = false;
+    // On passe à 500ms (0.5s) pour être totalement invisible aux yeux des radars de Wikipedia
+    setTimeout(processQueue, 500); 
+  };
+
+  if (!visible) {
+    return <View style={[props.style, { backgroundColor: '#111' }]} />;
+  }
+
+  return (
+    <Image
+      {...props}
+      onLoadEnd={handleNext} // Qu'il y ait succès ou erreur, on passe au suivant
+    />
+  );
+};
+// ------------------------------------------
 
 interface Fish {
   id: number;
   name: string;
   scientific_name: string;
   image: string;
-<<<<<<< HEAD
-}
-
-export default function HomeScreen() {
-  const [fishes, setFishes] = useState<Fish[]>([]);
-  const [loading, setLoading] = useState(true);
-=======
   family?: string;
   habitat?: string;
 }
 
-// Dynamic Unsplash fallback using the fish's name
 const getFishImageUrl = (fish: Fish): string => {
-  if (fish.image && fish.image.startsWith('http')) return fish.image;
-  const slug = encodeURIComponent(fish.name || 'fish');
-  return `https://source.unsplash.com/featured/800x600/?fish,${slug},underwater`;
+  if (!fish?.image) return "https://images.unsplash.com/photo-1524704654690-b56c05c78a00?w=800";
+
+  let url = fish.image.trim();
+  if (url.startsWith('//')) url = `https:${url}`;
+
+  // On nettoie les espaces qui sont les ennemis n°1
+  url = url.replace(/\s/g, '%20');
+
+  // Pour Wikipedia, on s'assure que les parenthèses sont encodées correctement
+  // sans utiliser encodeURI global qui peut casser d'autres parties
+  if (url.includes('wikimedia.org')) {
+    url = url.replace(/\(/g, '%28').replace(/\)/g, '%29');
+    
+    // On force une version de cache pour bypass les erreurs précédentes
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}v=10`; // On monte à v=10 pour être sûr
+  }
+
+  return url;
 };
 
 export default function HomeScreen() {
   const [fishes, setFishes] = useState<Fish[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
->>>>>>> origin/mael
   const [search, setSearch] = useState('');
   const router = useRouter();
 
   useEffect(() => {
-    loadData();
+    const resetApp = async () => {
+      await Image.clearDiskCache(); // Vide le cache physique
+      await Image.clearMemoryCache(); // Vide la RAM
+      loadData(true);
+    };
+    resetApp();
   }, []);
 
-  const loadData = async () => {
+  const loadData = async (force = false) => {
     try {
-      const data = await getFishes();
+      const data = await getFishes(force);
       setFishes(data);
     } catch (error) {
-<<<<<<< HEAD
-      console.error("Erreur de chargement", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filteredFishes = fishes.filter(f => 
-    f.name?.toLowerCase().includes(search.toLowerCase())
-  );
-
-  return (
-    <SafeAreaView style={styles.container}>
-=======
-      console.error('Erreur de chargement', error);
+      console.error('Erreur', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -95,111 +124,21 @@ export default function HomeScreen() {
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
+    imageQueue = []; // On vide la file au refresh
+    isProcessing = false;
     loadData();
   }, []);
 
   const filteredFishes = fishes.filter(
-    f =>
-      f.name?.toLowerCase().includes(search.toLowerCase()) ||
-      f.scientific_name?.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const renderHeader = () => (
-    <>
-      {/* NatGeo Header */}
->>>>>>> origin/mael
-      <View style={styles.header}>
-        <View style={styles.natGeoLogo} />
-        <View>
-          <Text style={styles.headerTitle}>NATIONAL</Text>
-          <Text style={styles.headerTitle}>GEOGRAPHIC</Text>
-        </View>
-<<<<<<< HEAD
-      </View>
-
-      <View style={styles.searchContainer}>
-        <TextInput 
-          style={styles.searchBar}
-          placeholder="Search species..."
-          placeholderTextColor="#666"
-          onChangeText={setSearch}
-          value={search}
-        />
-      </View>
-
-      {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color="#FEB204" />
-        </View>
-      ) : (
-        <FlatList
-          data={filteredFishes}
-          keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={styles.listContent}
-          renderItem={({ item }) => (
-            <TouchableOpacity 
-              activeOpacity={0.8}
-              style={styles.card}
-              onPress={() => router.push({
-                pathname: "/details/[id]",
-                params: {
-                  id: item.id,
-                  fishData: JSON.stringify(item)
-                }
-              })}
-            >
-              <Image
-              source={{ 
-              uri: item.image || 'https://images.unsplash.com/photo-1551244072-5d12893278ab?q=80&w=500' 
-              }}
-              style={styles.image}
-              contentFit="cover"
-              transition={400}
-              />
-              <View style={styles.content}>
-                <View style={styles.labelRow}>
-                  <View style={styles.yellowLabel} />
-                  <Text style={styles.scientific}>{item.scientific_name}</Text>
-                </View>
-                <Text style={styles.name}>{item.name}</Text>
-              </View>
-            </TouchableOpacity>
-          )}
-        />
-      )}
-=======
-        <Text style={styles.headerCount}>
-          {filteredFishes.length} <Text style={styles.headerCountSub}>SPECIES</Text>
-        </Text>
-      </View>
-
-      {/* Search */}
-      <View style={styles.searchContainer}>
-        <Ionicons name="search-outline" size={18} color="#555" style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchBar}
-          placeholder="Search species..."
-          placeholderTextColor="#555"
-          onChangeText={setSearch}
-          value={search}
-        />
-        {search.length > 0 && (
-          <TouchableOpacity onPress={() => setSearch('')}>
-            <Ionicons name="close-circle" size={18} color="#555" />
-          </TouchableOpacity>
-        )}
-      </View>
-    </>
+    f => f.name?.toLowerCase().includes(search.toLowerCase()) ||
+         f.scientific_name?.toLowerCase().includes(search.toLowerCase())
   );
 
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="light-content" />
-        {renderHeader()}
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#FEB204" />
-          <Text style={styles.loadingText}>LOADING SPECIES...</Text>
         </View>
       </SafeAreaView>
     );
@@ -211,146 +150,65 @@ export default function HomeScreen() {
       <FlatList
         data={filteredFishes}
         keyExtractor={item => item.id.toString()}
-        ListHeaderComponent={renderHeader}
-        contentContainerStyle={styles.listContent}
+        // Propriétés de performance :
+        windowSize={11} // Augmente la zone de rendu hors écran (défaut: 21, on peut monter si besoin)
+        removeClippedSubviews={false} // Désactiver si les images disparaissent trop vite au scroll
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor="#FEB204"
-            colors={['#FEB204']}
-            progressBackgroundColor="#111"
-          />
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Ionicons name="fish-outline" size={48} color="#333" />
-            <Text style={styles.emptyText}>NO SPECIES FOUND</Text>
-            <Text style={styles.emptySubText}>Try a different search term</Text>
-          </View>
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FEB204" />
         }
         renderItem={({ item, index }) => (
           <TouchableOpacity
-            activeOpacity={0.85}
             style={styles.card}
-            onPress={() =>
-              router.push({
-                pathname: '/details/[id]',
-                params: { id: item.id, fishData: JSON.stringify(item) },
-              })
-            }
+            onPress={() => router.push({
+              pathname: '/details/[id]',
+              params: { id: item.id, fishData: JSON.stringify(item) },
+            })}
           >
-            {/* Index badge */}
-            <View style={styles.indexBadge}>
-              <Text style={styles.indexText}>{String(index + 1).padStart(2, '0')}</Text>
-            </View>
-
             <Image
-              source={{ uri: getFishImageUrl(item) }}
+              key={`img-${item.id}-${search}`}
+              source={{ 
+                uri: item.image, // On utilise l'URL déjà traitée par fishApi.ts[cite: 1, 2]
+                headers: { 
+                  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36',
+                  'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+                  'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
+                  'Referer': 'https://commons.wikimedia.org/', // Crucial pour Wikipedia
+                }
+              }}
+              // Affiche un poisson générique pendant le chargement ou si l'image est absente
+              placeholder={require('@/assets/images/placeholder-fish.png')} 
+              placeholderContentFit="contain"
+              priority="high" 
+              cachePolicy="disk"
               style={styles.image}
               contentFit="cover"
               transition={400}
+              onError={() => {
+                console.log(`[ImageError] ID ${item.id} - Lien cassé ou inexistant.`);
+              }}
             />
 
-            {/* Bottom gradient overlay */}
-            <View style={styles.imageOverlay} />
-
             <View style={styles.content}>
-              <View style={styles.labelRow}>
-                <View style={styles.yellowLabel} />
-                <Text style={styles.scientific} numberOfLines={1}>
-                  {item.scientific_name}
-                </Text>
-              </View>
-              <Text style={styles.name} numberOfLines={2}>
-                {item.name}
-              </Text>
-              {item.family && (
-                <Text style={styles.family}>{item.family}</Text>
-              )}
-            </View>
-
-            {/* Arrow indicator */}
-            <View style={styles.arrowBadge}>
-              <Ionicons name="arrow-forward" size={14} color="#000" />
+              <Text style={styles.scientific}>{item.scientific_name}</Text>
+              <Text style={styles.name}>{item.name}</Text>
             </View>
           </TouchableOpacity>
         )}
       />
->>>>>>> origin/mael
     </SafeAreaView>
   );
 }
 
-<<<<<<< HEAD
-// ON VERIFIE BIEN QUE TOUT EST LA :
-const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#000' 
-=======
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
->>>>>>> origin/mael
   },
   center: {
     flex: 1,
     justifyContent: 'center',
-<<<<<<< HEAD
-    alignItems: 'center'
-  },
-  header: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    paddingHorizontal: 20, 
-    paddingTop: 20,
-    marginBottom: 10
-  },
-  natGeoLogo: { 
-    width: 12, 
-    height: 45, 
-    backgroundColor: '#FEB204', 
-    marginRight: 15 
-  },
-  headerTitle: { 
-    color: '#FFF', 
-    fontSize: 18, 
-    fontWeight: '900', 
-    letterSpacing: 1,
-    lineHeight: 20
-  },
-  searchContainer: {
-    paddingHorizontal: 20,
-    marginVertical: 15,
-  },
-  searchBar: { 
-    backgroundColor: '#1A1A1A', 
-    color: '#FFF', 
-    padding: 15, 
-    borderRadius: 8,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#333'
-  },
-  listContent: { // Ajouté pour corriger l'erreur
-    paddingBottom: 20
-  },
-  card: { // Ajouté pour corriger l'erreur
-    backgroundColor: '#111', 
-    marginBottom: 25, 
-    marginHorizontal: 20, 
-    borderRadius: 2, 
-    overflow: 'hidden',
-  },
-  image: { 
-    width: '100%', 
-    height: 220 
-  },
-  content: { 
-    padding: 15,
-=======
     alignItems: 'center',
     gap: 16,
   },
@@ -443,7 +301,8 @@ const styles = StyleSheet.create({
   },
   image: {
     width: '100%',
-    height: 230,
+    height: 200, // Une valeur fixe pour tester
+    backgroundColor: '#222', // Pour voir si le carré s'affiche au moins
   },
   imageOverlay: {
     position: 'absolute',
@@ -456,39 +315,17 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
->>>>>>> origin/mael
   },
   labelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-<<<<<<< HEAD
-    marginBottom: 5
-=======
     marginBottom: 6,
     gap: 8,
->>>>>>> origin/mael
   },
   yellowLabel: {
     width: 4,
     height: 12,
     backgroundColor: '#FEB204',
-<<<<<<< HEAD
-    marginRight: 8
-  },
-  name: { 
-    color: '#FFF', 
-    fontSize: 22, 
-    fontWeight: 'bold',
-    textTransform: 'uppercase'
-  },
-  scientific: { 
-    color: '#FEB204', 
-    fontSize: 12, 
-    fontWeight: '600',
-    letterSpacing: 1,
-    textTransform: 'uppercase'
-  }
-=======
     borderRadius: 1,
   },
   name: {
@@ -537,5 +374,4 @@ const styles = StyleSheet.create({
     color: '#2A2A2A',
     fontSize: 13,
   },
->>>>>>> origin/mael
 });
