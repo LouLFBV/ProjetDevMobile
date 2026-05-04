@@ -1,43 +1,55 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
+  Animated,
   Dimensions,
   StatusBar,
-  Animated,
-} from 'react-native';
-import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
-const { width, height } = Dimensions.get('window');
+const { width, height } = Dimensions.get("window");
 
 const SLIDES = [
   {
-    image: 'https://images.unsplash.com/photo-1518020382113-a7e8fc38eac9?q=80&w=1200',
-    label: 'OCEAN',
-    title: 'DISCOVER\nNATURE',
-    sub: 'Dive into the extraordinary world of aquatic life, from shallow reefs to the abyssal deep.',
+    image:
+      "https://images.pexels.com/photos/30162615/pexels-photo-30162615.jpeg",
+    label: "DEEP BLUE",
+    title: "Discover nature\nand explore beyond",
+    sub: "Experience the silent beauty of the ocean depths.",
   },
   {
-    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200',
-    label: 'WILDLIFE',
-    title: 'EXPLORE\nBEYOND',
-    sub: 'Over 800 documented fish species await your curiosity in our living scientific archive.',
+    image:
+      "https://images.pexels.com/photos/14438493/pexels-photo-14438493.jpeg",
+    label: "TROPICAL",
+    title: "EXPLORE\nTHE UNKNOWN",
+    sub: "Over 800 documented fish species await your curiosity.",
   },
   {
-    image: 'https://images.unsplash.com/photo-1559825481-12a05cc00344?q=80&w=1200',
-    label: 'SCIENCE',
-    title: 'PROTECT\n& LEARN',
-    sub: 'Knowledge is the first step to conservation. Every species tells a story worth knowing.',
+    image:
+      "https://images.pexels.com/photos/14863434/pexels-photo-14863434.jpeg",
+    label: "ECOSYSTEM",
+    title: "PROTECT\n& LEARN",
+    sub: "Every species tells a story worth knowing and protecting.",
+  },
+  {
+    image:
+      "https://images.unsplash.com/photo-1610741620547-1191d693e43d?q=80&w=1200&auto=format",
+    label: "BIODIVERSITY",
+    title: "DISCOVER\n& PRESERVE",
+    sub: "Each living being holds secrets that connect us to the heart of nature. Let’s unveil and safeguard them together.",
   },
 ];
 
 export default function WelcomeScreen() {
   const router = useRouter();
   const [currentSlide, setCurrentSlide] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideUpAnim = useRef(new Animated.Value(50)).current;
@@ -45,95 +57,182 @@ export default function WelcomeScreen() {
   const btnOpacity = useRef(new Animated.Value(0)).current;
   const imgFade = useRef(new Animated.Value(1)).current;
 
+  // Prefetch des images
+  useEffect(() => {
+    SLIDES.forEach((slide) => Image.prefetch(slide.image));
+  }, []);
+
+  // Animations d'entrée (au chargement)
   useEffect(() => {
     Animated.sequence([
       Animated.delay(150),
       Animated.parallel([
-        Animated.spring(logoScale, { toValue: 1, useNativeDriver: true, tension: 55, friction: 8 }),
-        Animated.timing(fadeAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
-        Animated.timing(slideUpAnim, { toValue: 0, duration: 800, useNativeDriver: true }),
+        Animated.spring(logoScale, {
+          toValue: 1,
+          useNativeDriver: true,
+          tension: 55,
+          friction: 8,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideUpAnim, {
+          toValue: 0,
+          duration: 800,
+          useNativeDriver: true,
+        }),
       ]),
-      Animated.timing(btnOpacity, { toValue: 1, duration: 500, useNativeDriver: true }),
+      Animated.timing(btnOpacity, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
     ]).start();
   }, []);
 
-  // Auto-advance with crossfade
+  // Fonction de transition fluide
+  // 1. On fige la fonction pour qu'elle soit accessible partout sans erreur
+  const changeSlide = (index: number) => {
+    if (!imgFade) return; // Sécurité
+
+    Animated.timing(imgFade, {
+      toValue: 0,
+      duration: 400,
+      useNativeDriver: true,
+    }).start(() => {
+      setCurrentSlide(index);
+
+      // Le setTimeout permet d'éviter le "glitch" visuel
+      setTimeout(() => {
+        Animated.timing(imgFade, {
+          toValue: 1,
+          duration: 600,
+          useNativeDriver: true,
+        }).start();
+      }, 250);
+    });
+  }; // Dépendance nécessaire pour useCallback
+
+  // 2. Gestion du cycle de vie du timer
   useEffect(() => {
-    const timer = setInterval(() => {
-      Animated.timing(imgFade, { toValue: 0.4, duration: 400, useNativeDriver: true }).start(() => {
-        setCurrentSlide(prev => (prev + 1) % SLIDES.length);
-        Animated.timing(imgFade, { toValue: 1, duration: 600, useNativeDriver: true }).start();
-      });
+    // On crée l'intervalle
+    const intervalId = setInterval(() => {
+      const nextIndex = (currentSlide + 1) % SLIDES.length;
+      changeSlide(nextIndex);
     }, 4500);
-    return () => clearInterval(timer);
-  }, []);
+
+    // On stocke dans la ref pour pouvoir l'annuler au clic manuel
+    timerRef.current = intervalId;
+
+    // Nettoyage automatique
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [currentSlide, changeSlide]); // Le timer se reset proprement à chaque changement
+
+  // Gestion du cycle de vie du timer
+  useEffect(() => {
+    // On crée l'intervalle dans une variable locale d'abord
+    const id = setInterval(() => {
+      const nextIndex = (currentSlide + 1) % SLIDES.length;
+      changeSlide(nextIndex);
+    }, 4500);
+
+    // On l'assigne à la ref
+    timerRef.current = id;
+
+    // Nettoyage
+    return () => {
+      if (id) clearInterval(id);
+    };
+  }, [currentSlide]); // On redémarre le timer quand la slide change
 
   const slide = SLIDES[currentSlide];
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      <StatusBar
+        barStyle="light-content"
+        translucent
+        backgroundColor="transparent"
+      />
 
-      {/* Background */}
-      <Animated.View style={[StyleSheet.absoluteFillObject, { opacity: imgFade }]}>
+      {/* Background avec animation de fondu */}
+      <Animated.View
+        style={[StyleSheet.absoluteFillObject, { opacity: imgFade }]}
+      >
         <Image
           source={{ uri: slide.image }}
           style={styles.bgImage}
           contentFit="cover"
-          transition={600}
         />
       </Animated.View>
 
-      {/* Gradient overlays */}
-      <View style={styles.overlayTop} />
-      <View style={styles.overlayBottom} />
+      <LinearGradient
+        colors={["transparent", "rgba(0,0,0,0.5)", "rgba(0,0,0,0.9)", "#000"]}
+        locations={[0, 0.4, 0.7, 1]}
+        style={styles.overlayBottom}
+      />
 
-      {/* NatGeo Logo */}
-      <Animated.View
-        style={[styles.logoArea, { opacity: fadeAnim, transform: [{ scale: logoScale }] }]}
-      >
-        <View style={styles.natGeoBlock} />
-        <View>
-          <Text style={styles.logoLine}>NATIONAL</Text>
-          <Text style={styles.logoLine}>GEOGRAPHIC</Text>
-        </View>
-      </Animated.View>
-
-      {/* Slide label tag */}
-      <Animated.View style={[styles.labelTag, { opacity: fadeAnim }]}>
-        <Text style={styles.labelTagText}>{slide.label}</Text>
-      </Animated.View>
-
-      {/* Center content */}
+      {/* Texte au centre */}
       <Animated.View
         style={[
           styles.centerContent,
           { opacity: fadeAnim, transform: [{ translateY: slideUpAnim }] },
         ]}
       >
-        <View style={styles.accentLine} />
         <Text style={styles.tagline}>{slide.title}</Text>
         <Text style={styles.subtitle}>{slide.sub}</Text>
       </Animated.View>
 
-      {/* Bottom: dots + CTA */}
+      {/* Barre du bas : Dots + Bouton */}
       <Animated.View style={[styles.bottomArea, { opacity: btnOpacity }]}>
-        {/* Pagination dots */}
         <View style={styles.dotsRow}>
           {SLIDES.map((_, i) => (
-            <View key={i} style={[styles.dot, i === currentSlide && styles.dotActive]} />
+            <TouchableOpacity
+              key={i}
+              activeOpacity={0.8}
+              onPress={() => {
+                if (i !== currentSlide) {
+                  if (timerRef.current) clearInterval(timerRef.current);
+                  changeSlide(i);
+                }
+              }}
+              style={{ padding: 10, margin: -10 }}
+            >
+              <View
+                style={[styles.dot, i === currentSlide && styles.dotActive]}
+              >
+                {i === currentSlide && (
+                  <Ionicons
+                    name="chevron-forward"
+                    size={12}
+                    color="#000"
+                    style={{ marginLeft: 2 }}
+                  />
+                )}
+              </View>
+            </TouchableOpacity>
           ))}
         </View>
 
-        {/* CTA */}
         <TouchableOpacity
-          style={styles.ctaButton}
-          activeOpacity={0.82}
-          onPress={() => router.replace('/(tabs)')}
+          style={styles.ctaButtonContainer}
+          onPress={() => router.replace("/(tabs)")}
         >
-          <Text style={styles.ctaText}>GET STARTED</Text>
+          <LinearGradient
+            colors={["transparent", "rgba(255, 255, 255, 0.15)"]}
+            start={{ x: 1, y: 0.5 }}
+            end={{ x: 0.35, y: 0.5 }}
+            style={styles.ctaGradientBg}
+          />
+          <Text style={styles.ctaTextLabel}>Get Started</Text>
           <View style={styles.ctaIconWrap}>
-            <Ionicons name="chevron-forward" size={18} color="#000" />
+            <Ionicons name="chevron-forward" size={30} color="white" />
           </View>
         </TouchableOpacity>
       </Animated.View>
@@ -144,141 +243,94 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: "#000",
   },
   bgImage: {
     width,
     height,
   },
-  overlayTop: {
-    ...StyleSheet.absoluteFillObject,
-    height: height * 0.45,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-  },
   overlayBottom: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    height: height * 0.6,
-    backgroundColor: 'rgba(0,0,0,0.72)',
+    height: height * 0.75,
   },
-
-  // Logo
-  logoArea: {
-    position: 'absolute',
-    top: 58,
-    left: 26,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  natGeoBlock: {
-    width: 12,
-    height: 44,
-    backgroundColor: '#FEB204',
-  },
-  logoLine: {
-    color: '#FFF',
-    fontSize: 15,
-    fontWeight: '900',
-    letterSpacing: 2.5,
-    lineHeight: 18,
-  },
-
-  // Label tag (top-right)
-  labelTag: {
-    position: 'absolute',
-    top: 66,
-    right: 26,
-    borderWidth: 1,
-    borderColor: 'rgba(254,178,4,0.5)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 2,
-  },
-  labelTagText: {
-    color: '#FEB204',
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 2.5,
-  },
-
-  // Main text block
   centerContent: {
-    position: 'absolute',
-    bottom: 160,
+    position: "absolute",
+    bottom: 200,
     left: 26,
     right: 26,
-  },
-  accentLine: {
-    width: 44,
-    height: 4,
-    backgroundColor: '#FEB204',
-    marginBottom: 22,
-    borderRadius: 2,
   },
   tagline: {
-    color: '#FFF',
-    fontSize: 56,
-    fontWeight: '900',
-    lineHeight: 60,
+    color: "#FFF",
+    fontSize: 32,
+    fontWeight: "700",
+    lineHeight: 45,
     letterSpacing: 0.5,
     marginBottom: 16,
   },
   subtitle: {
-    color: 'rgba(255,255,255,0.7)',
+    color: "rgba(255,255,255,0.7)",
     fontSize: 15,
     lineHeight: 24,
     maxWidth: 310,
-  },
-
-  // Bottom CTA area
-  bottomArea: {
-    position: 'absolute',
-    bottom: 52,
-    left: 26,
-    right: 26,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  dotsRow: {
-    flexDirection: 'row',
-    gap: 7,
-    alignItems: 'center',
   },
   dot: {
     width: 7,
     height: 7,
     borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.3)',
+    backgroundColor: "rgba(255,255,255,0.3)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   dotActive: {
-    width: 22,
-    height: 7,
-    backgroundColor: '#FEB204',
-    borderRadius: 4,
+    width: 26, // Un peu plus large pour le chevron
+    height: 26,
+    backgroundColor: "#C1F45A",
+    borderRadius: 13,
   },
-  ctaButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FEB204',
-    paddingVertical: 14,
-    paddingLeft: 22,
-    paddingRight: 6,
-    borderRadius: 4,
-    gap: 10,
+  bottomArea: {
+    position: "absolute",
+    bottom: 52,
+    left: 26,
+    right: 26,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
-  ctaText: {
-    color: '#000',
-    fontSize: 13,
-    fontWeight: '900',
-    letterSpacing: 2,
+  dotsRow: {
+    flexDirection: "row",
+    gap: 15,
+    alignItems: "center",
+  },
+  ctaButtonContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 15,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.05)",
+  },
+  ctaGradientBg: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  ctaTextLabel: {
+    color: "#FFF",
+    fontWeight: "bold",
+    fontSize: 18,
+    marginLeft: 15,
+    marginRight: 10,
+    zIndex: 1,
   },
   ctaIconWrap: {
-    backgroundColor: 'rgba(0,0,0,0.18)',
-    borderRadius: 2,
-    padding: 5,
+    backgroundColor: "#C1F45A",
+    borderRadius: 13,
+    width: 48,
+    height: 48,
+    justifyContent: "center",
+    alignItems: "center",
+    margin: 5,
+    zIndex: 1,
   },
 });

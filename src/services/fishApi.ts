@@ -1,8 +1,9 @@
+//fishApi.ts
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const API_KEY = 'e325dba369msh6f2258c940ad510p135e21jsnc8e2736c1c0a';
 const STORAGE_KEY = '@fish_data_cache_v3';
-const CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
+const CACHE_TTL_MS = 1000 * 60 * 60 * 6;
 
 interface CacheEntry {
   timestamp: number;
