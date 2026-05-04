@@ -5,11 +5,13 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 
+// Garde l'écran de chargement visible jusqu'à ce que l'app soit prête
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   
   useEffect(() => {
+    // Cache le splash screen immédiatement (ou après tes chargements de données)
     SplashScreen.hideAsync();
   }, []);
 
@@ -19,12 +21,27 @@ export default function RootLayout() {
         screenOptions={{
           headerShown: false,
           animation: 'fade',
-          contentStyle: { backgroundColor: '#000' },
+          contentStyle: { backgroundColor: '#000' }, // Évite les flashs blancs entre les vues
         }}
       >
-        {/* L'ordre ici définit la priorité, "welcome" sera ton point d'entrée */}
-        <Stack.Screen name="welcome" options={{ headerShown: false, animation: 'none' }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        {/* L'ordre définit la priorité : "welcome" est ton point d'entrée par défaut */}
+        <Stack.Screen 
+          name="welcome" 
+          options={{ 
+            headerShown: false, 
+            animation: 'none' 
+          }} 
+        />
+
+        {/* Contient ton index.tsx (le catalogue de poissons) */}
+        <Stack.Screen 
+          name="(tabs)" 
+          options={{ 
+            headerShown: false 
+          }} 
+        />
+
+        {/* Page de détails avec animation latérale premium */}
         <Stack.Screen
           name="details/[id]"
           options={{
@@ -33,8 +50,12 @@ export default function RootLayout() {
             presentation: 'card',
           }}
         />
+
+        {/* Route de secours en cas d'erreur de lien */}
         <Stack.Screen name="+not-found" />
       </Stack>
+      
+      {/* Assure que les icônes de batterie/heure restent blanches sur fond noir */}
       <StatusBar style="light" />
     </ThemeProvider>
   );
