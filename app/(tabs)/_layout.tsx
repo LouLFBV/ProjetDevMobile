@@ -2,6 +2,7 @@ import { HapticTab } from "@/components/haptic-tab";
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import React from "react";
+import { View } from "react-native";
 
 export default function TabLayout() {
   return (
@@ -9,44 +10,54 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarButton: HapticTab,
+        tabBarShowLabel: false,
         tabBarStyle: {
-          backgroundColor: "#080808",
-          borderTopWidth: 1,
-          borderTopColor: "#1C1C1C",
-          height: 68,
-          paddingBottom: 12,
-          paddingTop: 8,
+          backgroundColor: "#121212",
+          borderTopWidth: 0,
+          height: 80,
+          paddingTop: 10,
         },
         tabBarActiveTintColor: "#C1F45A",
-        tabBarInactiveTintColor: "#444",
-        tabBarLabelStyle: {
-          fontSize: 9,
-          fontWeight: "700",
-          letterSpacing: 1.2,
-          textTransform: "uppercase",
-        },
+        tabBarInactiveTintColor: "#555",
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
-          tabBarIcon: ({ color, size }) => (
-            // filled house — matches the image
-            <Ionicons name="home" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="home-sharp" size={26} color={color} />
+              {focused && <View style={styles.indicator} />}
+            </View>
           ),
         }}
       />
+      
       <Tabs.Screen
         name="explore"
         options={{
-          title: "Explore",
-          tabBarIcon: ({ color, size }) => (
-            // filled compass circle — matches the image
-            <Ionicons name="compass" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+              {/* On utilise l'icône compass qui prend la couleur active/inactive automatiquement */}
+              <Ionicons name="compass-sharp" size={26} color={color} />
+              
+              {/* Le point ne s'affiche que si l'onglet est actif */}
+              {focused && <View style={styles.indicator} />}
+            </View>
           ),
         }}
       />
     </Tabs>
   );
 }
+
+// Pour éviter de répéter le style du point, on peut utiliser un petit objet styles
+const styles = {
+  indicator: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: "#C1F45A",
+    marginTop: 6,
+  }
+};
