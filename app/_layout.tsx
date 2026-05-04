@@ -1,3 +1,4 @@
+//_layout.tsx
 import { DarkTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -31,7 +32,6 @@ export default function RootLayout() {
             presentation: 'card',
           }}
         />
-        <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="light" />
     </ThemeProvider>
