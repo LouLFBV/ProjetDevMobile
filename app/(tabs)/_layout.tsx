@@ -38,10 +38,8 @@ export default function TabLayout() {
         options={{
           tabBarIcon: ({ color, focused }) => (
             <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-              {/* On utilise l'icône compass qui prend la couleur active/inactive automatiquement */}
               <Ionicons name="compass-sharp" size={26} color={color} />
               
-              {/* Le point ne s'affiche que si l'onglet est actif */}
               {focused && <View style={styles.indicator} />}
             </View>
           ),
@@ -51,7 +49,6 @@ export default function TabLayout() {
   );
 }
 
-// Pour éviter de répéter le style du point, on peut utiliser un petit objet styles
 const styles = {
   indicator: {
     width: 5,

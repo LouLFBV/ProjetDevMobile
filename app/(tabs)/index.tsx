@@ -40,7 +40,6 @@ const PLACEHOLDER = [
   "https://picsum.photos/seed/fish3/800/400",
 ];
 
-// ── Design tokens ─────────────────────────────────────────────────
 const BG = "#111214";
 const CARD_BG = "#30312D";
 const BORDER = "#30312D";
@@ -52,9 +51,6 @@ const imgUrl = (fish: Fish) =>
     ? fish.image
     : `https://picsum.photos/seed/${fish.id}/400/500`;
 
-// ─────────────────────────────────────────────────────────────────
-// Skeleton shimmer
-// ─────────────────────────────────────────────────────────────────
 function SkeletonCard({ width: w }: { width: number }) {
   const opacity = useSharedValue(0.35);
   useEffect(() => {
@@ -201,9 +197,6 @@ function SkeletonRow() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────
-// Grid card: image top, text below
-// ─────────────────────────────────────────────────────────────────
 function GridCard({
   item,
   onPress,
@@ -246,9 +239,6 @@ function GridCard({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────
-// Horizontal row card
-// ─────────────────────────────────────────────────────────────────
 function RowCard({
   item,
   onPress,
@@ -291,9 +281,6 @@ function RowCard({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────
-// Screen
-// ─────────────────────────────────────────────────────────────────
 export default function HomeScreen() {
   const [fishes, setFishes] = useState<Fish[]>([]);
   const [loading, setLoading] = useState(true);
@@ -308,7 +295,6 @@ export default function HomeScreen() {
     load();
   }, []);
 
-  // Auto-cycle hero
   useEffect(() => {
     const t = setInterval(() => {
       RNAnimated.sequence([
@@ -354,12 +340,10 @@ export default function HomeScreen() {
       params: { id: item.id, fishData: JSON.stringify(item) },
     });
 
-  // Slice data for sections
   const hero = fishes[0];
-  const gridFish = fishes.slice(1, 5); // 4 items for 2×2 grid
-  const rowFish = fishes.slice(5, 8); // 3 items for horizontal section
+  const gridFish = fishes.slice(1, 5); 
+  const rowFish = fishes.slice(5, 8); 
 
-  // ── Loading skeletons ──────────────────────────────────────────
   if (loading) {
     return (
       <View style={styles.root}>
@@ -415,7 +399,6 @@ export default function HomeScreen() {
     );
   }
 
-  // ── Error state ────────────────────────────────────────────────
   if (error) {
     return (
       <View
@@ -458,7 +441,6 @@ export default function HomeScreen() {
     );
   }
 
-  // ── ListHeaderComponent ────────────────────────────────────────
   const ListHeader = (
     <View>
       {/* Hero */}
@@ -553,7 +535,6 @@ export default function HomeScreen() {
     </View>
   );
 
-  // ── ListFooterComponent — horizontal cards section ─────────────
   const ListFooter = (
     <View>
       <View style={[styles.sectionRow, { marginTop: 28 }]}>
@@ -569,7 +550,6 @@ export default function HomeScreen() {
     </View>
   );
 
-  // ── Empty state ────────────────────────────────────────────────
   const ListEmpty = (
     <View style={{ alignItems: "center", paddingTop: 40, gap: 12 }}>
       <Ionicons name="fish-outline" size={44} color="#2A2A2A" />
@@ -594,7 +574,6 @@ export default function HomeScreen() {
         backgroundColor="transparent"
       />
       <FlatList
-        // Data: only the 4 grid fish (hero + horizontal rows handled in header/footer)
         data={gridFish}
         keyExtractor={(item) => item.id.toString()}
         numColumns={2}
@@ -604,7 +583,6 @@ export default function HomeScreen() {
         ListFooterComponent={ListFooter}
         ListEmptyComponent={ListEmpty}
         showsVerticalScrollIndicator={false}
-        // ✅ Performance optimisations
         windowSize={5}
         maxToRenderPerBatch={8}
         initialNumToRender={4}
@@ -634,7 +612,6 @@ export default function HomeScreen() {
   );
 }
 
-// ── Styles ────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: BG },
   listContent: { paddingHorizontal: H_PAD, paddingBottom: 16 },

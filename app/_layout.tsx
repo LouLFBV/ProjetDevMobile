@@ -4,7 +4,6 @@ import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 
-// On empêche le splash de partir automatiquement
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
@@ -15,11 +14,9 @@ export default function RootLayout() {
   useEffect(() => {
     async function prepare() {
       try {
-        // 1. On vérifie le stockage local
         await AsyncStorage.clear();
         const hasSeenOnboarding = await AsyncStorage.getItem('hasSeenOnboarding');
         
-        // 2. On décide du chemin AVANT d'afficher quoi que ce soit
         if (hasSeenOnboarding === null) {
           setInitialRoute('welcome');
         } else {
@@ -28,7 +25,6 @@ export default function RootLayout() {
       } catch (e) {
         setInitialRoute('(tabs)');
       } finally {
-        // 3. On signale que l'app est prête
         setIsReady(true);
       }
     }
@@ -37,15 +33,12 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    // 4. Une fois prêt, on cache le Splash et on saute sur la bonne route
     if (isReady && initialRoute) {
-      // On utilise replace pour ne pas avoir de transition "back"
       router.replace(initialRoute as any);
       SplashScreen.hideAsync();
     }
   }, [isReady, initialRoute]);
 
-  // Tant qu'on n'est pas prêt, on ne rend RIEN (on reste sur l'image du Splash)
   if (!isReady) return null;
 
   return (

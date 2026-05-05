@@ -29,15 +29,13 @@ export default function WelcomeScreen() {
 
   const scrollX = useRef(new Animated.Value(0)).current;
   
-  // TECHNIQUE DU RIDEAU : Le calque noir commence à opacité 1
   const overlayOpacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    // On lance l'animation après un micro-délai pour laisser le thread JS respirer
     Animated.timing(overlayOpacity, {
       toValue: 0,
       duration: 800, 
-      useNativeDriver: true, // Crucial pour la fluidité
+      useNativeDriver: true, 
     }).start();
   }, []);
 
@@ -83,7 +81,7 @@ export default function WelcomeScreen() {
             source={{ uri: item.image }} 
             style={styles.bgImage} 
             contentFit="cover"
-            transition={300} // Fondu interne à l'image pour plus de douceur
+            transition={300} 
           />
         </Animated.View>
         
@@ -146,9 +144,8 @@ export default function WelcomeScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* LE RIDEAU NOIR : Il couvre tout et s'efface pour révéler l'interface */}
       <Animated.View 
-        pointerEvents="none" // Permet de cliquer à travers une fois invisible
+        pointerEvents="none" 
         style={[
           StyleSheet.absoluteFillObject, 
           { backgroundColor: '#000', opacity: overlayOpacity }
@@ -169,7 +166,7 @@ const styles = StyleSheet.create({
   bottomArea: { position: 'absolute', bottom: 52, left: 26, right: 26, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   dotsRow: { flexDirection: 'row', gap: 7, alignItems: 'center' },
   dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.3)', justifyContent: 'center', alignItems: 'center' },
-  dotActive: { width: 12.5, height: 12.5, backgroundColor: '#C1F45A', borderRadius: 11 }, // Un peu plus grand pour l'icône
+  dotActive: { width: 12.5, height: 12.5, backgroundColor: '#C1F45A', borderRadius: 11 }, 
   ctaButtonContainer: { flexDirection: 'row', alignItems: 'center', borderRadius: 10, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.05)' },
   ctaGradientBg: { ...StyleSheet.absoluteFillObject },
   ctaTextLabel: { color: '#FFF', fontWeight: 'bold', fontSize: 18, marginLeft: 15, marginRight: 10, zIndex: 1 },
