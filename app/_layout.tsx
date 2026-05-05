@@ -16,6 +16,7 @@ export default function RootLayout() {
     async function prepare() {
       try {
         // 1. On vérifie le stockage local
+        await AsyncStorage.clear();
         const hasSeenOnboarding = await AsyncStorage.getItem('hasSeenOnboarding');
         
         // 2. On décide du chemin AVANT d'afficher quoi que ce soit
