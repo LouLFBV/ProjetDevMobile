@@ -89,9 +89,7 @@ export default function FishDetails() {
         <Ionicons name="chevron-back" size={18} color="#FFF" />
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.heartBtn} activeOpacity={0.85}>
-        <Ionicons name="heart" size={17} color="#ff60dfdb" />
-      </TouchableOpacity>
+      
 
       {/* ── Sticky title on scroll ────────────────────────── */}
       <Animated.View style={[styles.stickyHeader, { opacity: stickyOpacity }]}>
@@ -239,6 +237,8 @@ const BG = "#111214";
 const CARD_BG = "#1C1E22";
 const BORDER = "#2C2C2E";
 const ACCENT = "#FEC158";
+const ACCENT2 = "#C1F45A";
+
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: BG },
@@ -253,18 +253,6 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     backgroundColor: "rgba(60,60,60,0.75)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  heartBtn: {
-    position: "absolute",
-    top: 52,
-    right: 16,
-    zIndex: 40,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.92)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -349,14 +337,14 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   tabLabel: { color: "#b1b1b1", fontSize: 14, fontWeight: "600" },
-  tabLabelActive: { color: "#FFF", fontWeight: "700" },
+  tabLabelActive: { color: ACCENT2, fontWeight: "700" },
   tabUnderline: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
     height: 2,
-    backgroundColor: ACCENT,
+    backgroundColor: ACCENT2,
     borderTopLeftRadius: 1,
     borderTopRightRadius: 1,
   },
@@ -385,7 +373,7 @@ const styles = StyleSheet.create({
 
   // Section heading (album)
   sectionHeading: {
-    color: ACCENT,
+    color: ACCENT2,
     fontSize: 10,
     fontWeight: "900",
     letterSpacing: 3,
@@ -398,7 +386,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#111",
     padding: 10,
     borderLeftWidth: 3,
-    borderLeftColor: ACCENT,
+    borderLeftColor: ACCENT2,
   },
   albumCaptionText: {
     color: "#555",

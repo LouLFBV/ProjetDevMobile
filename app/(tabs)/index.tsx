@@ -5,10 +5,10 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Animated,
   Dimensions,
+  FlatList,
   RefreshControl,
+  Animated as RNAnimated,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -16,131 +16,327 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Animated, {
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
 
 const { width } = Dimensions.get("window");
 const H_PAD = 16;
 const CARD_GAP = 12;
-const GRID_CARD_W = (width - H_PAD * 2 - CARD_GAP) / 2;
-
+const GRID_W = (width - H_PAD * 2 - CARD_GAP) / 2;
 const HERO_W = width - H_PAD * 2;
 const HERO_H = Math.round(HERO_W * (141 / 305));
 const HERO_RADIUS = 24;
 
 const CATEGORIES = ["All", "Marine", "Freshwater", "Tropical", "Deep Sea"];
-
-const PLACEHOLDER_IMAGES = [
+const PLACEHOLDER = [
   "https://picsum.photos/seed/fish1/800/400",
   "https://picsum.photos/seed/fish2/800/400",
   "https://picsum.photos/seed/fish3/800/400",
 ];
 
-const imgUrl = (fish: Fish): string => {
-  if (fish.image && fish.image.startsWith("http")) return fish.image;
-  return `https://picsum.photos/seed/${fish.id ?? 1}/400/500`;
-};
-
+// ── Design tokens ─────────────────────────────────────────────────
 const BG = "#111214";
 const CARD_BG = "#30312D";
 const BORDER = "#30312D";
 const RADIUS = 18;
+const ACCENT = "#C1F45A";
 
-// ─── Grid card ───────────────────────────────────────────────────
-function GridCard({ item, onPress }: { item: Fish; onPress: () => void }) {
+const imgUrl = (fish: Fish) =>
+  fish.image?.startsWith("http")
+    ? fish.image
+    : `https://picsum.photos/seed/${fish.id}/400/500`;
+
+// ─────────────────────────────────────────────────────────────────
+// Skeleton shimmer
+// ─────────────────────────────────────────────────────────────────
+function SkeletonCard({ width: w }: { width: number }) {
+  const opacity = useSharedValue(0.35);
+  useEffect(() => {
+    opacity.value = withRepeat(
+      withSequence(
+        withTiming(0.9, { duration: 700 }),
+        withTiming(0.35, { duration: 700 }),
+      ),
+      -1,
+      false,
+    );
+  }, []);
+  const anim = useAnimatedStyle(() => ({ opacity: opacity.value }));
   return (
-    <TouchableOpacity
-      activeOpacity={0.88}
-      style={styles.gridCard}
-      onPress={onPress}
+    <Animated.View
+      style={[
+        {
+          width: w,
+          borderRadius: RADIUS,
+          overflow: "hidden",
+          backgroundColor: CARD_BG,
+        },
+        anim,
+      ]}
     >
-      <View style={styles.gridImgWrap}>
-        <Image
-          source={{ uri: imgUrl(item) }}
-          style={styles.gridImg}
-          contentFit="cover"
-          transition={300}
+      <View
+        style={{ width: "100%", height: w * 1.1, backgroundColor: "#3A3B37" }}
+      />
+      <View style={{ padding: 12, gap: 8 }}>
+        <View
+          style={{
+            height: 10,
+            backgroundColor: "#3A3B37",
+            borderRadius: 6,
+            width: "80%",
+          }}
+        />
+        <View
+          style={{
+            height: 10,
+            backgroundColor: "#3A3B37",
+            borderRadius: 6,
+            width: "55%",
+          }}
+        />
+        <View
+          style={{
+            height: 8,
+            backgroundColor: "#3A3B37",
+            borderRadius: 6,
+            width: "35%",
+          }}
         />
       </View>
-      <View style={styles.cardBody}>
-        <Text style={styles.cardName} numberOfLines={3}>
-          {item.name}
-        </Text>
-        <View style={styles.readRow}>
-          <Ionicons name="reorder-three-outline" size={15} color="#AAA" />
-          <Text style={styles.readText}>READ</Text>
-        </View>
-      </View>
-    </TouchableOpacity>
+    </Animated.View>
   );
 }
 
-// ─── Row card ─────────────────────────────────────────────────────
-function RowCard({ item, onPress }: { item: Fish; onPress: () => void }) {
+function SkeletonHero() {
+  const opacity = useSharedValue(0.35);
+  useEffect(() => {
+    opacity.value = withRepeat(
+      withSequence(
+        withTiming(0.9, { duration: 700 }),
+        withTiming(0.35, { duration: 700 }),
+      ),
+      -1,
+      false,
+    );
+  }, []);
+  const anim = useAnimatedStyle(() => ({ opacity: opacity.value }));
   return (
-    <TouchableOpacity
-      activeOpacity={0.88}
-      style={styles.rowCard}
-      onPress={onPress}
-    >
-      <View style={styles.rowImgWrap}>
-        <Image
-          source={{ uri: imgUrl(item) }}
-          style={styles.rowImg}
-          contentFit="cover"
-          transition={300}
-        />
-      </View>
-      <View style={styles.rowBody}>
-        <Text style={styles.rowName} numberOfLines={3}>
-          {item.name}
-        </Text>
-        <View style={styles.readRow}>
-          <Ionicons name="reorder-three-outline" size={15} color="#AAA" />
-          <Text style={styles.readText}>READ</Text>
-        </View>
-      </View>
-    </TouchableOpacity>
+    <Animated.View
+      style={[
+        {
+          marginHorizontal: H_PAD,
+          marginTop: 52,
+          height: HERO_H,
+          borderRadius: HERO_RADIUS,
+          backgroundColor: CARD_BG,
+          marginBottom: 16,
+        },
+        anim,
+      ]}
+    />
   );
 }
 
-// ─── Screen ──────────────────────────────────────────────────────
+function SkeletonRow() {
+  const opacity = useSharedValue(0.35);
+  useEffect(() => {
+    opacity.value = withRepeat(
+      withSequence(
+        withTiming(0.9, { duration: 700 }),
+        withTiming(0.35, { duration: 700 }),
+      ),
+      -1,
+      false,
+    );
+  }, []);
+  const anim = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  return (
+    <Animated.View
+      style={[
+        {
+          flexDirection: "row",
+          marginHorizontal: H_PAD,
+          marginBottom: 12,
+          height: 120,
+          borderRadius: RADIUS,
+          backgroundColor: CARD_BG,
+        },
+        anim,
+      ]}
+    >
+      <View
+        style={{
+          width: 120,
+          height: "100%",
+          backgroundColor: "#3A3B37",
+          borderTopLeftRadius: RADIUS,
+          borderBottomLeftRadius: RADIUS,
+        }}
+      />
+      <View style={{ flex: 1, padding: 14, gap: 8 }}>
+        <View
+          style={{
+            height: 10,
+            backgroundColor: "#3A3B37",
+            borderRadius: 6,
+            width: "85%",
+          }}
+        />
+        <View
+          style={{
+            height: 10,
+            backgroundColor: "#3A3B37",
+            borderRadius: 6,
+            width: "60%",
+          }}
+        />
+      </View>
+    </Animated.View>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Grid card: image top, text below
+// ─────────────────────────────────────────────────────────────────
+function GridCard({
+  item,
+  onPress,
+  index,
+}: {
+  item: Fish;
+  onPress: () => void;
+  index: number;
+}) {
+  return (
+    <Animated.View
+      entering={FadeInDown.delay(index * 60)
+        .springify()
+        .damping(14)}
+    >
+      <TouchableOpacity
+        activeOpacity={0.88}
+        style={[styles.gridCard]}
+        onPress={onPress}
+      >
+        <View style={styles.gridImgWrap}>
+          <Image
+            source={{ uri: imgUrl(item) }}
+            style={styles.gridImg}
+            contentFit="cover"
+            transition={300}
+          />
+        </View>
+        <View style={styles.cardBody}>
+          <Text style={styles.cardName} numberOfLines={2}>
+            {item.name}
+          </Text>
+          <View style={styles.readRow}>
+            <Ionicons name="reorder-three-outline" size={15} color="#AAA" />
+            <Text style={styles.readText}>READ</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Horizontal row card
+// ─────────────────────────────────────────────────────────────────
+function RowCard({
+  item,
+  onPress,
+  index,
+}: {
+  item: Fish;
+  onPress: () => void;
+  index: number;
+}) {
+  return (
+    <Animated.View
+      entering={FadeInDown.delay(index * 80)
+        .springify()
+        .damping(14)}
+    >
+      <TouchableOpacity
+        activeOpacity={0.88}
+        style={styles.rowCard}
+        onPress={onPress}
+      >
+        <View style={styles.rowImgWrap}>
+          <Image
+            source={{ uri: imgUrl(item) }}
+            style={styles.rowImg}
+            contentFit="cover"
+            transition={300}
+          />
+        </View>
+        <View style={styles.rowBody}>
+          <Text style={styles.rowName} numberOfLines={3}>
+            {item.name}
+          </Text>
+          <View style={styles.readRow}>
+            <Ionicons name="reorder-three-outline" size={15} color="#AAA" />
+            <Text style={styles.readText}>READ</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Screen
+// ─────────────────────────────────────────────────────────────────
 export default function HomeScreen() {
   const [fishes, setFishes] = useState<Fish[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(false);
   const [activeCategory, setActiveCategory] = useState("All");
   const [heroSlide, setHeroSlide] = useState(1);
-  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const fadeAnim = useRef(new RNAnimated.Value(1)).current;
   const router = useRouter();
 
   useEffect(() => {
     load();
   }, []);
 
+  // Auto-cycle hero
   useEffect(() => {
-    const timer = setInterval(() => {
-      Animated.sequence([
-        Animated.timing(fadeAnim, {
+    const t = setInterval(() => {
+      RNAnimated.sequence([
+        RNAnimated.timing(fadeAnim, {
           toValue: 0.5,
           duration: 300,
           useNativeDriver: true,
         }),
-        Animated.timing(fadeAnim, {
+        RNAnimated.timing(fadeAnim, {
           toValue: 1,
           duration: 400,
           useNativeDriver: true,
         }),
       ]).start();
-      setHeroSlide((prev) => (prev + 1) % 3);
-    }, 4000);
-    return () => clearInterval(timer);
+      setHeroSlide((p) => (p + 1) % 3);
+    }, 4500);
+    return () => clearInterval(t);
   }, []);
 
   const load = async (force = false) => {
+    setError(false);
     try {
       const data = await getFishes(force);
-      setFishes(data);
+      if (!data || data.length === 0) setError(true);
+      else setFishes(data);
     } catch (e) {
-      console.error(e);
+      console.error("[Home] load error:", e);
+      setError(true);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -158,75 +354,142 @@ export default function HomeScreen() {
       params: { id: item.id, fishData: JSON.stringify(item) },
     });
 
+  // Slice data for sections
   const hero = fishes[0];
-  const gridFish = fishes.slice(1, 5);
-  const rowFish = fishes.slice(5, 8);
+  const gridFish = fishes.slice(1, 5); // 4 items for 2×2 grid
+  const rowFish = fishes.slice(5, 8); // 3 items for horizontal section
 
+  // ── Loading skeletons ──────────────────────────────────────────
   if (loading) {
     return (
-      <View style={styles.loadingBox}>
-        <StatusBar barStyle="light-content" />
-        <ActivityIndicator size="large" color="#C1F45A" />
-        <Text style={styles.loadingText}>LOADING…</Text>
+      <View style={styles.root}>
+        <StatusBar
+          barStyle="light-content"
+          translucent
+          backgroundColor="transparent"
+        />
+        <SkeletonHero />
+        {/* Filter pill skeleton */}
+        <View style={[styles.filterPill, { marginBottom: 22 }]}>
+          <View style={{ height: 48 }} />
+        </View>
+        <View style={[styles.sectionRow, { marginBottom: 14 }]}>
+          <View
+            style={{
+              height: 14,
+              width: 160,
+              backgroundColor: CARD_BG,
+              borderRadius: 6,
+            }}
+          />
+        </View>
+        {/* Grid skeletons */}
+        <View style={styles.grid}>
+          {[0, 1, 2, 3].map((i) => (
+            <View
+              key={i}
+              style={
+                i % 2 === 0
+                  ? { marginRight: CARD_GAP / 2 }
+                  : { marginLeft: CARD_GAP / 2 }
+              }
+            >
+              <SkeletonCard width={GRID_W} />
+            </View>
+          ))}
+        </View>
+        <View style={[styles.sectionRow, { marginTop: 28, marginBottom: 14 }]}>
+          <View
+            style={{
+              height: 14,
+              width: 160,
+              backgroundColor: CARD_BG,
+              borderRadius: 6,
+            }}
+          />
+        </View>
+        {[0, 1, 2].map((i) => (
+          <SkeletonRow key={i} />
+        ))}
       </View>
     );
   }
 
-  return (
-    <View style={styles.root}>
-      <StatusBar
-        barStyle="light-content"
-        translucent
-        backgroundColor="transparent"
-      />
-
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scroll}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor="#C1F45A"
-            colors={["#C1F45A"]}
-            progressBackgroundColor="#13140D"
-          />
-        }
+  // ── Error state ────────────────────────────────────────────────
+  if (error) {
+    return (
+      <View
+        style={[
+          styles.root,
+          { alignItems: "center", justifyContent: "center", gap: 16 },
+        ]}
       >
-        {/* ── Hero ──────────────────────────────────────────────── */}
+        <StatusBar barStyle="light-content" />
+        <Ionicons name="cloud-offline-outline" size={52} color="#333" />
+        <Text
+          style={{
+            color: "#444",
+            fontSize: 14,
+            fontWeight: "700",
+            letterSpacing: 1,
+          }}
+        >
+          FAILED TO LOAD
+        </Text>
+        <TouchableOpacity
+          style={{
+            backgroundColor: ACCENT,
+            paddingVertical: 12,
+            paddingHorizontal: 28,
+            borderRadius: 30,
+          }}
+          onPress={() => {
+            setLoading(true);
+            load(true);
+          }}
+        >
+          <Text
+            style={{ color: "#000", fontWeight: "900", letterSpacing: 1.5 }}
+          >
+            RETRY
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // ── ListHeaderComponent ────────────────────────────────────────
+  const ListHeader = (
+    <View>
+      {/* Hero */}
+      {hero && (
         <TouchableOpacity
           activeOpacity={0.9}
           style={styles.heroCard}
-          onPress={() => hero && go(hero)}
+          onPress={() => go(hero)}
         >
-          <Animated.View
+          <RNAnimated.View
             style={[StyleSheet.absoluteFill, { opacity: fadeAnim }]}
           >
             <Image
-              source={{ uri: PLACEHOLDER_IMAGES[heroSlide] }}
+              source={{ uri: PLACEHOLDER[heroSlide] }}
               style={StyleSheet.absoluteFill}
               contentFit="cover"
               transition={400}
             />
-          </Animated.View>
-
+          </RNAnimated.View>
           <LinearGradient
             colors={["transparent", "rgba(0,0,0,0.18)", "rgba(0,0,0,0.72)"]}
             locations={[0, 0.45, 1]}
             style={StyleSheet.absoluteFill}
           />
-
           <View style={styles.heroPause}>
             <Ionicons name="pause" size={11} color="#FFF" />
           </View>
-
           <View style={styles.heroLabel}>
             <View style={styles.heroBar} />
-            <Text style={styles.heroName}>
-              {hero?.name?.toUpperCase() ?? "ANIMALS"}
-            </Text>
+            <Text style={styles.heroName}>{hero.name?.toUpperCase()}</Text>
           </View>
-
           <View style={styles.heroDotsRow}>
             {[0, 1, 2].map((i) => (
               <TouchableOpacity
@@ -250,98 +513,140 @@ export default function HomeScreen() {
             ))}
           </View>
         </TouchableOpacity>
+      )}
 
-        {/* ── Filter pill ──────────────────────────────────────── */}
-        <View style={styles.filterPill}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filterInner}
-          >
-            {CATEGORIES.map((cat) => {
-              const active = activeCategory === cat;
-              return (
-                <TouchableOpacity
-                  key={cat}
-                  style={styles.filterItem}
-                  onPress={() => setActiveCategory(cat)}
-                  activeOpacity={0.7}
+      {/* Filter pill */}
+      <View style={styles.filterPill}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterInner}
+        >
+          {CATEGORIES.map((cat) => {
+            const active = activeCategory === cat;
+            return (
+              <TouchableOpacity
+                key={cat}
+                style={styles.filterItem}
+                onPress={() => setActiveCategory(cat)}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[styles.filterText, active && styles.filterTextActive]}
                 >
-                  <Text
-                    style={[
-                      styles.filterText,
-                      active && styles.filterTextActive,
-                    ]}
-                  >
-                    {cat}
-                  </Text>
-                  {/* Underline flush at bottom of pill */}
-                  {active && <View style={styles.filterUnderline} />}
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
+                  {cat}
+                </Text>
+                {active && <View style={styles.filterUnderline} />}
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
 
-        {/* ── Recommended 2-col ────────────────────────────────── */}
-        <View style={styles.sectionRow}>
-          <Text style={styles.sectionTitle}>Recommended Species</Text>
-          <TouchableOpacity onPress={() => router.push("/(tabs)/explore")}>
-            <Text style={styles.showAll}>Show All</Text>
-          </TouchableOpacity>
-        </View>
+      {/* Section header */}
+      <View style={styles.sectionRow}>
+        <Text style={styles.sectionTitle}>Recommended Species</Text>
+        <TouchableOpacity onPress={() => router.push("/(tabs)/explore")}>
+          <Text style={styles.showAll}>Show All</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 
-        <View style={styles.grid}>
-          {gridFish.map((item, i) => (
-            <View
-              key={item.id}
-              style={
-                i % 2 === 0
-                  ? { marginRight: CARD_GAP / 2 }
-                  : { marginLeft: CARD_GAP / 2 }
-              }
-            >
-              <GridCard item={item} onPress={() => go(item)} />
-            </View>
-          ))}
-        </View>
+  // ── ListFooterComponent — horizontal cards section ─────────────
+  const ListFooter = (
+    <View>
+      <View style={[styles.sectionRow, { marginTop: 28 }]}>
+        <Text style={styles.sectionTitle}>Recommended Species</Text>
+        <TouchableOpacity onPress={() => router.push("/(tabs)/explore")}>
+          <Text style={styles.showAll}>Show All</Text>
+        </TouchableOpacity>
+      </View>
+      {rowFish.map((item, i) => (
+        <RowCard key={item.id} item={item} index={i} onPress={() => go(item)} />
+      ))}
+      <View style={{ height: 24 }} />
+    </View>
+  );
 
-        {/* ── Recommended horizontal ───────────────────────────── */}
-        <View style={[styles.sectionRow, { marginTop: 28 }]}>
-          <Text style={styles.sectionTitle}>Recommended Species</Text>
-          <TouchableOpacity onPress={() => router.push("/(tabs)/explore")}>
-            <Text style={styles.showAll}>Show All</Text>
-          </TouchableOpacity>
-        </View>
+  // ── Empty state ────────────────────────────────────────────────
+  const ListEmpty = (
+    <View style={{ alignItems: "center", paddingTop: 40, gap: 12 }}>
+      <Ionicons name="fish-outline" size={44} color="#2A2A2A" />
+      <Text
+        style={{
+          color: "#2A2A2A",
+          fontSize: 13,
+          fontWeight: "900",
+          letterSpacing: 3,
+        }}
+      >
+        NO SPECIES FOUND
+      </Text>
+    </View>
+  );
 
-        {rowFish.map((item) => (
-          <RowCard key={item.id} item={item} onPress={() => go(item)} />
-        ))}
-
-        <View style={{ height: 24 }} />
-      </ScrollView>
+  return (
+    <View style={styles.root}>
+      <StatusBar
+        barStyle="light-content"
+        translucent
+        backgroundColor="transparent"
+      />
+      <FlatList
+        // Data: only the 4 grid fish (hero + horizontal rows handled in header/footer)
+        data={gridFish}
+        keyExtractor={(item) => item.id.toString()}
+        numColumns={2}
+        columnWrapperStyle={styles.row}
+        contentContainerStyle={styles.listContent}
+        ListHeaderComponent={ListHeader}
+        ListFooterComponent={ListFooter}
+        ListEmptyComponent={ListEmpty}
+        showsVerticalScrollIndicator={false}
+        // ✅ Performance optimisations
+        windowSize={5}
+        maxToRenderPerBatch={8}
+        initialNumToRender={4}
+        removeClippedSubviews
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={ACCENT}
+            colors={[ACCENT]}
+            progressBackgroundColor="#13140D"
+          />
+        }
+        renderItem={({ item, index }) => (
+          <View
+            style={
+              index % 2 === 0
+                ? { marginRight: CARD_GAP / 2 }
+                : { marginLeft: CARD_GAP / 2 }
+            }
+          >
+            <GridCard item={item} index={index} onPress={() => go(item)} />
+          </View>
+        )}
+      />
     </View>
   );
 }
 
+// ── Styles ────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: BG },
-  loadingBox: {
-    flex: 1,
-    backgroundColor: BG,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 14,
+  listContent: { paddingHorizontal: H_PAD, paddingBottom: 16 },
+  row: { gap: CARD_GAP, marginBottom: CARD_GAP },
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    paddingHorizontal: H_PAD,
+    rowGap: CARD_GAP,
   },
-  loadingText: {
-    color: "#333",
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 3,
-  },
-  scroll: { paddingBottom: 16 },
 
-  // ── Hero ──
+  // Hero
   heroCard: {
     marginHorizontal: H_PAD,
     marginTop: 52,
@@ -406,11 +711,10 @@ const styles = StyleSheet.create({
     width: 15,
     height: 15,
     borderRadius: 8,
-    backgroundColor: "#C1F45A",
+    backgroundColor: ACCENT,
   },
 
-  // ── Filter pill ──
-  // The pill has a fixed height so the underline can be positioned absolute bottom:0
+  // Filter pill
   filterPill: {
     marginHorizontal: H_PAD,
     marginBottom: 22,
@@ -419,35 +723,34 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: BORDER,
     overflow: "hidden",
-    height: 48, // fixed height — gives underline a stable anchor
+    height: 48,
   },
   filterInner: {
     paddingHorizontal: 8,
     flexDirection: "row",
-    alignItems: "stretch", // items stretch to fill the 48px height
+    alignItems: "stretch",
     height: 48,
   },
   filterItem: {
     paddingHorizontal: 14,
-    justifyContent: "center", // centre the text vertically
+    justifyContent: "center",
     alignItems: "center",
     position: "relative",
   },
   filterText: { color: "#666", fontSize: 14, fontWeight: "600" },
   filterTextActive: { color: "#FFF", fontWeight: "700" },
-  // Flush at the very bottom of the 48px pill
   filterUnderline: {
     position: "absolute",
     bottom: 0,
     left: 8,
     right: 8,
     height: 3,
-    backgroundColor: "#C1F45A",
+    backgroundColor: ACCENT,
     borderTopLeftRadius: 2,
     borderTopRightRadius: 2,
   },
 
-  // ── Section header ──
+  // Section header
   sectionRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -456,17 +759,11 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   sectionTitle: { color: "#FFF", fontSize: 15, fontWeight: "800" },
-  showAll: { color: "#C1F45A", fontSize: 12, fontWeight: "700" },
+  showAll: { color: ACCENT, fontSize: 12, fontWeight: "700" },
 
-  // ── 2-col grid ──
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    paddingHorizontal: H_PAD,
-    rowGap: CARD_GAP,
-  },
+  // Grid card
   gridCard: {
-    width: GRID_CARD_W,
+    width: GRID_W,
     borderRadius: RADIUS,
     overflow: "hidden",
     backgroundColor: CARD_BG,
@@ -475,7 +772,7 @@ const styles = StyleSheet.create({
   },
   gridImgWrap: {
     width: "100%",
-    height: GRID_CARD_W * 1.1,
+    height: GRID_W * 1.1,
     borderTopLeftRadius: RADIUS,
     borderTopRightRadius: RADIUS,
     overflow: "hidden",
@@ -491,7 +788,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
-  // ── Horizontal row cards ──
+  // Row card
   rowCard: {
     flexDirection: "row",
     marginHorizontal: H_PAD,
