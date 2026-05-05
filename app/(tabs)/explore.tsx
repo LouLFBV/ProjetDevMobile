@@ -114,15 +114,8 @@ export default function ExploreScreen() {
 
   const renderHeader = () => (
     <View>
-      {/* NatGeo top bar */}
+      {/* top bar */}
       <View style={styles.topBar}>
-        <View style={styles.brandRow}>
-          <View style={styles.natGeoBar} />
-          <View>
-            <Text style={styles.brandText}>NATIONAL</Text>
-            <Text style={styles.brandText}>GEOGRAPHIC</Text>
-          </View>
-        </View>
         <View>
           <Text style={styles.speciesNum}>{filtered.length}</Text>
           <Text style={styles.speciesLbl}>SPECIES</Text>
@@ -277,13 +270,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: H_PAD,
     paddingTop: 14,
     marginBottom: 14,
-  },
-  brandRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  natGeoBar: {
-    width: 8,
-    height: 34,
-    backgroundColor: "#C1F45A",
-    borderRadius: 2,
   },
   brandText: {
     color: "#FFF",
