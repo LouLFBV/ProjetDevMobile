@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
@@ -17,141 +17,114 @@ const { width, height } = Dimensions.get("window");
 
 const SLIDES = [
   {
+    id: "1",
     image:
       "https://images.pexels.com/photos/30162615/pexels-photo-30162615.jpeg",
-    label: "DEEP BLUE",
     title: "Discover nature\nand explore beyond",
-    sub: "Experience the silent beauty of the ocean depths.",
+    sub: "find with us your dream house \nquickly and precisely",
   },
   {
+    id: "2",
     image:
       "https://images.pexels.com/photos/14438493/pexels-photo-14438493.jpeg",
-    label: "TROPICAL",
     title: "EXPLORE\nTHE UNKNOWN",
     sub: "Over 800 documented fish species await your curiosity.",
   },
   {
+    id: "3",
     image:
       "https://images.pexels.com/photos/14863434/pexels-photo-14863434.jpeg",
-    label: "ECOSYSTEM",
     title: "PROTECT\n& LEARN",
     sub: "Every species tells a story worth knowing and protecting.",
   },
   {
+    id: "4",
     image:
       "https://images.unsplash.com/photo-1610741620547-1191d693e43d?q=80&w=1200&auto=format",
-    label: "BIODIVERSITY",
     title: "DISCOVER\n& PRESERVE",
-    sub: "Each living being holds secrets that connect us to the heart of nature. Let’s unveil and safeguard them together.",
+    sub: "Each living being holds secrets that connect us to the heart of nature.",
   },
 ];
 
 export default function WelcomeScreen() {
   const router = useRouter();
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
 
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideUpAnim = useRef(new Animated.Value(50)).current;
-  const logoScale = useRef(new Animated.Value(0.7)).current;
-  const btnOpacity = useRef(new Animated.Value(0)).current;
-  const imgFade = useRef(new Animated.Value(1)).current;
+  // 1. VALEUR ANIMÉE : Elle va suivre la position du scroll (0 à width * 3)
+  const scrollX = useRef(new Animated.Value(0)).current;
 
-  // Prefetch des images
-  useEffect(() => {
-    SLIDES.forEach((slide) => Image.prefetch(slide.image));
-  }, []);
+  const onScroll = (event: any) => {
+    const xPosition = event.nativeEvent.contentOffset.x;
+    const newIndex = Math.round(xPosition / width);
+    if (newIndex !== activeIndex) {
+      setActiveIndex(newIndex);
+    }
+  };
 
-  // Animations d'entrée (au chargement)
-  useEffect(() => {
-    Animated.sequence([
-      Animated.delay(150),
-      Animated.parallel([
-        Animated.spring(logoScale, {
-          toValue: 1,
-          useNativeDriver: true,
-          tension: 55,
-          friction: 8,
-        }),
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-        Animated.timing(slideUpAnim, {
-          toValue: 0,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-      ]),
-      Animated.timing(btnOpacity, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, []);
+  const renderItem = ({
+    item,
+    index,
+  }: {
+    item: (typeof SLIDES)[0];
+    index: number;
+  }) => {
+    // 2. INTERPOLATION : On définit ce qui se passe quand on arrive, reste ou quitte le slide
+    const inputRange = [
+      (index - 1) * width,
+      index * width,
+      (index + 1) * width,
+    ];
 
-  // Fonction de transition fluide
-  // 1. On fige la fonction pour qu'elle soit accessible partout sans erreur
-  const changeSlide = (index: number) => {
-    if (!imgFade) return; // Sécurité
-
-    Animated.timing(imgFade, {
-      toValue: 0,
-      duration: 400,
-      useNativeDriver: true,
-    }).start(() => {
-      setCurrentSlide(index);
-
-      // Le setTimeout permet d'éviter le "glitch" visuel
-      setTimeout(() => {
-        Animated.timing(imgFade, {
-          toValue: 1,
-          duration: 600,
-          useNativeDriver: true,
-        }).start();
-      }, 250);
+    // L'image devient sombre (fondu au noir) quand elle s'éloigne du centre
+    const imageOpacity = scrollX.interpolate({
+      inputRange,
+      outputRange: [0.4, 1, 0.4], // 0.4 au lieu de 0 pour ne pas être totalement noir trop vite
     });
-  }; // Dépendance nécessaire pour useCallback
 
-  // 2. Gestion du cycle de vie du timer
-  useEffect(() => {
-    // On crée l'intervalle
-    const intervalId = setInterval(() => {
-      const nextIndex = (currentSlide + 1) % SLIDES.length;
-      changeSlide(nextIndex);
-    }, 4500);
+    // Le texte monte et descend pendant le swipe (effet parallaxe)
+    const translateY = scrollX.interpolate({
+      inputRange,
+      outputRange: [60, 0, -60],
+    });
 
-    // On stocke dans la ref pour pouvoir l'annuler au clic manuel
-    timerRef.current = intervalId;
+    // Le texte disparaît en fondu
+    const textOpacity = scrollX.interpolate({
+      inputRange,
+      outputRange: [0, 1, 0],
+    });
 
-    // Nettoyage automatique
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
-  }, [currentSlide, changeSlide]); // Le timer se reset proprement à chaque changement
+    return (
+      <View style={styles.slideContainer}>
+        {/* On remplace Image par Animated.View contenant l'image pour l'opacité */}
+        <Animated.View
+          style={[StyleSheet.absoluteFillObject, { opacity: imageOpacity }]}
+        >
+          <Image
+            source={{ uri: item.image }}
+            style={styles.bgImage}
+            contentFit="cover"
+          />
+        </Animated.View>
 
-  // Gestion du cycle de vie du timer
-  useEffect(() => {
-    // On crée l'intervalle dans une variable locale d'abord
-    const id = setInterval(() => {
-      const nextIndex = (currentSlide + 1) % SLIDES.length;
-      changeSlide(nextIndex);
-    }, 4500);
+        <LinearGradient
+          colors={["transparent", "rgba(0,0,0,0.5)", "rgba(0,0,0,0.9)", "#000"]}
+          locations={[0, 0.4, 0.7, 1]}
+          style={styles.overlayBottom}
+        />
 
-    // On l'assigne à la ref
-    timerRef.current = id;
-
-    // Nettoyage
-    return () => {
-      if (id) clearInterval(id);
-    };
-  }, [currentSlide]); // On redémarre le timer quand la slide change
-
-  const slide = SLIDES[currentSlide];
+        {/* 3. ANIMATED.VIEW : Pour animer le texte */}
+        <Animated.View
+          style={[
+            styles.centerContent,
+            { opacity: textOpacity, transform: [{ translateY }] },
+          ]}
+        >
+          <Text style={styles.tagline}>{item.title}</Text>
+          <Text style={styles.subtitle}>{item.sub}</Text>
+        </Animated.View>
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -161,62 +134,38 @@ export default function WelcomeScreen() {
         backgroundColor="transparent"
       />
 
-      {/* Background avec animation de fondu */}
-      <Animated.View
-        style={[StyleSheet.absoluteFillObject, { opacity: imgFade }]}
-      >
-        <Image
-          source={{ uri: slide.image }}
-          style={styles.bgImage}
-          contentFit="cover"
-        />
-      </Animated.View>
-
-      <LinearGradient
-        colors={["transparent", "rgba(0,0,0,0.5)", "rgba(0,0,0,0.9)", "#000"]}
-        locations={[0, 0.4, 0.7, 1]}
-        style={styles.overlayBottom}
+      {/* 4. ANIMATED.FLATLIST : On branche le scroll sur notre scrollX */}
+      <Animated.FlatList
+        data={SLIDES}
+        renderItem={renderItem}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        // Utilisation du driver natif pour une fluidité à 60 FPS
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+          { useNativeDriver: true, listener: onScroll },
+        )}
+        scrollEventThrottle={16}
+        keyExtractor={(item) => item.id}
       />
 
-      {/* Texte au centre */}
-      <Animated.View
-        style={[
-          styles.centerContent,
-          { opacity: fadeAnim, transform: [{ translateY: slideUpAnim }] },
-        ]}
-      >
-        <Text style={styles.tagline}>{slide.title}</Text>
-        <Text style={styles.subtitle}>{slide.sub}</Text>
-      </Animated.View>
-
-      {/* Barre du bas : Dots + Bouton */}
-      <Animated.View style={[styles.bottomArea, { opacity: btnOpacity }]}>
+      <View style={styles.bottomArea} pointerEvents="box-none">
         <View style={styles.dotsRow}>
           {SLIDES.map((_, i) => (
-            <TouchableOpacity
+            <View
               key={i}
-              activeOpacity={0.8}
-              onPress={() => {
-                if (i !== currentSlide) {
-                  if (timerRef.current) clearInterval(timerRef.current);
-                  changeSlide(i);
-                }
-              }}
-              style={{ padding: 10, margin: -10 }}
+              style={[styles.dot, i === activeIndex && styles.dotActive]}
             >
-              <View
-                style={[styles.dot, i === currentSlide && styles.dotActive]}
-              >
-                {i === currentSlide && (
-                  <Ionicons
-                    name="chevron-forward"
-                    size={12}
-                    color="#000"
-                    style={{ marginLeft: 2 }}
-                  />
-                )}
-              </View>
-            </TouchableOpacity>
+              {i === activeIndex && (
+                <Ionicons
+                  name="chevron-forward"
+                  size={10}
+                  color="#000"
+                  style={{ marginLeft: 2 }}
+                />
+              )}
+            </View>
           ))}
         </View>
 
@@ -235,20 +184,15 @@ export default function WelcomeScreen() {
             <Ionicons name="chevron-forward" size={30} color="white" />
           </View>
         </TouchableOpacity>
-      </Animated.View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#000",
-  },
-  bgImage: {
-    width,
-    height,
-  },
+  container: { flex: 1, backgroundColor: "#000" },
+  slideContainer: { width, height },
+  bgImage: { ...StyleSheet.absoluteFillObject },
   overlayBottom: {
     position: "absolute",
     bottom: 0,
@@ -256,18 +200,13 @@ const styles = StyleSheet.create({
     right: 0,
     height: height * 0.75,
   },
-  centerContent: {
-    position: "absolute",
-    bottom: 200,
-    left: 26,
-    right: 26,
-  },
+  centerContent: { position: "absolute", bottom: 250, left: 26, right: 26 },
   tagline: {
     color: "#FFF",
     fontSize: 32,
     fontWeight: "700",
     lineHeight: 45,
-    letterSpacing: 0.5,
+    letterSpacing: 1,
     marginBottom: 16,
   },
   subtitle: {
@@ -275,20 +214,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 24,
     maxWidth: 310,
-  },
-  dot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: "rgba(255,255,255,0.3)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  dotActive: {
-    width: 26, // Un peu plus large pour le chevron
-    height: 26,
-    backgroundColor: "#C1F45A",
-    borderRadius: 13,
   },
   bottomArea: {
     position: "absolute",
@@ -299,22 +224,30 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  dotsRow: {
-    flexDirection: "row",
-    gap: 15,
+  dotsRow: { flexDirection: "row", gap: 7, alignItems: "center" },
+  dot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: "rgba(255,255,255,0.3)",
+    justifyContent: "center",
     alignItems: "center",
   },
+  dotActive: {
+    width: 12.5,
+    height: 12.5,
+    backgroundColor: "#C1F45A",
+    borderRadius: 11,
+  }, // Un peu plus grand pour l'icône
   ctaButtonContainer: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 15,
+    borderRadius: 10,
     overflow: "hidden",
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.05)",
   },
-  ctaGradientBg: {
-    ...StyleSheet.absoluteFillObject,
-  },
+  ctaGradientBg: { ...StyleSheet.absoluteFillObject },
   ctaTextLabel: {
     color: "#FFF",
     fontWeight: "bold",
