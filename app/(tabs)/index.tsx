@@ -1,19 +1,3 @@
-/**
- * app/(tabs)/index.tsx  — Home screen
- *
- * Checklist:
- * ✅ API data via getFishes()
- * ✅ FlatList (numColumns=2) — NO nested ScrollView
- * ✅ ListHeaderComponent for hero + filters + section title
- * ✅ ListFooterComponent for horizontal-card section
- * ✅ refreshControl
- * ✅ Skeleton loaders (Reanimated shimmer)
- * ✅ Reanimated FadeInDown per item
- * ✅ windowSize + maxToRenderPerBatch
- * ✅ Empty state + error state
- * ✅ API images (img_src_set → resolved URL in fishApi)
- */
-
 import { Fish, getFishes } from "@/src/services/fishApi";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -56,7 +40,7 @@ const PLACEHOLDER = [
   "https://picsum.photos/seed/fish3/800/400",
 ];
 
-// ── Design tokens ─────────────────────────────────────────────────
+// Design tokens
 const BG = "#111214";
 const CARD_BG = "#30312D";
 const BORDER = "#30312D";

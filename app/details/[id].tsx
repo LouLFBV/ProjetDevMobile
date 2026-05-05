@@ -123,7 +123,7 @@ export default function FishDetails() {
               "transparent",
               "rgba(17,18,20,0.30)",
               "rgba(17,18,20,0.82)",
-              "#111214",
+              "#30312D",
             ]}
             locations={[0.3, 0.58, 0.8, 1]}
             style={StyleSheet.absoluteFill}
@@ -235,10 +235,10 @@ export default function FishDetails() {
 }
 
 // ── Design tokens ─────────────────────────────────────────────────
-const BG = "#111214";
-const CARD_BG = "#1C1E22";
-const BORDER = "#2C2C2E";
-const ACCENT = "#FEC158";
+const BG = "#30312D";
+const CARD_BG = "#000000";
+const BORDER = "#30312D";
+const ACCENT = "#BEDE61";
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: BG },
@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   heroAuthorAccent: {
-    color: ACCENT,
+    color: "#FEC158",
     fontWeight: "700",
   },
 
@@ -323,8 +323,8 @@ const styles = StyleSheet.create({
     paddingBottom: 2,
   },
   divider: {
-    height: 1,
-    backgroundColor: BORDER,
+    height: 2,
+    backgroundColor: "#4C4C4C",
     marginBottom: 10,
     marginTop: 4,
   },
@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: BORDER,
+    borderBottomColor: "#30312D",
     marginBottom: 16,
   },
   tabItem: {
@@ -349,10 +349,10 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   tabLabel: { color: "#b1b1b1", fontSize: 14, fontWeight: "600" },
-  tabLabelActive: { color: "#FFF", fontWeight: "700" },
+  tabLabelActive: { color: "#BEDE61", fontWeight: "700" },
   tabUnderline: {
     position: "absolute",
-    bottom: 0,
+    bottom: 6,
     left: 0,
     right: 0,
     height: 2,
